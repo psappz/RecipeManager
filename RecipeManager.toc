@@ -1,0 +1,40 @@
+## Interface: 16001
+## Title: |cffe3b55bRecipeManager|r
+## Notes: Warns you near recipe vendors, flags Limited Supply recipes and shows what a recipe is worth on the Auction House. WoW Forever.
+## Notes-deDE: Warnt in der Nähe von Rezepthändlern, markiert Limited-Supply-Rezepte und zeigt den Auktionshauswert eines Rezepts. WoW Forever.
+## Notes-frFR: Vous avertit près des vendeurs de recettes, signale les recettes en stock limité et affiche leur valeur à l'hôtel des ventes. WoW Forever.
+## Notes-esES: Avisa cerca de vendedores de recetas, marca las recetas de suministro limitado y muestra su valor en la casa de subastas. WoW Forever.
+## Notes-itIT: Avvisa vicino ai venditori di ricette, segnala le ricette a disponibilità limitata e mostra il loro valore all'asta. WoW Forever.
+## Notes-ptBR: Avisa perto de vendedores de receitas, marca receitas de estoque limitado e mostra o valor na casa de leilões. WoW Forever.
+## Author: psappz
+## Version: 0.1.0
+## Dependencies: QuestieDB
+## OptionalDeps: Auctionator, Auc-Advanced, TradeSkillMaster
+## SavedVariables: RecipeManagerDB
+## SavedVariablesPerCharacter: RecipeManagerCharDB
+## IconTexture: Interface\Icons\INV_Scroll_03
+## AddonCompartmentFunc: RecipeManager_OnAddonCompartmentClick
+
+Libs\LibStub\LibStub.lua
+Libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
+Libs\LibDataBroker-1.1\LibDataBroker-1.1.lua
+Libs\LibDBIcon-1.0\LibDBIcon-1.0.lua
+
+Locale.lua
+Data\LimitedSupply.lua
+Data\RecipeProducts.lua
+Data\VendorPrices.lua
+Core.lua
+Database.lua
+Professions.lua
+Rules.lua
+Prices.lua
+Merchant.lua
+Macro.lua
+Arrow.lua
+Proximity.lua
+RecipeScan.lua
+UI_Widgets.lua
+UI_Main.lua
+UI_Settings.lua
+Init.lua
