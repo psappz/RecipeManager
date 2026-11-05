@@ -1,8 +1,12 @@
 # Changelog
 
+## 0.1.2
+
+- Fix: Database.lua stopped loading at an event that does not exist in the Forever client (NEW_RECIPE_LEARNED). Profession names and ranks were missing, the window and settings failed to open. Unknown events are now skipped.
+
 ## 0.1.1
 
-- Fix: the window did not open in the Forever client (profession names; Lua error in UI_Main.lua:71)
+- Profession names: safe fallback when the client cannot provide them
 - A window that fails to build is no longer left half-created
 
 ## 0.1.0 (unreleased)

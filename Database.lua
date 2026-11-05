@@ -269,7 +269,7 @@ function DB:BareName(itemID)
 end
 
 function DB:ProfessionName(skillLine)
-    -- C_TradeSkillUI.GetTradeSkillDisplayName exists in the Forever client but fails there; never let it break the UI
+    -- C_TradeSkillUI.GetTradeSkillDisplayName may be missing or fail in Classic clients; never let it break the UI
     local name
     local f = C_TradeSkillUI and C_TradeSkillUI.GetTradeSkillDisplayName
     if type(f) == "function" then
