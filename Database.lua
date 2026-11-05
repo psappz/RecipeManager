@@ -269,7 +269,13 @@ function DB:BareName(itemID)
 end
 
 function DB:ProfessionName(skillLine)
-    local name = C_TradeSkillUI and C_TradeSkillUI.GetTradeSkillDisplayName and C_TradeSkillUI.GetTradeSkillDisplayName(skillLine)
+    -- C_TradeSkillUI.GetTradeSkillDisplayName exists in the Forever client but fails there; never let it break the UI
+    local name
+    local f = C_TradeSkillUI and C_TradeSkillUI.GetTradeSkillDisplayName
+    if type(f) == "function" then
+        local ok, n = pcall(f, skillLine)
+        if ok and type(n) == "string" and n ~= "" then name = n end
+    end
     return name or L["PROF_" .. skillLine] or tostring(skillLine)
 end
 

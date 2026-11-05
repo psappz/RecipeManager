@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1
+
+- Fix: the window did not open in the Forever client (profession names; Lua error in UI_Main.lua:71)
+- A window that fails to build is no longer left half-created
+
 ## 0.1.0 (unreleased)
 
 First version for WoW Forever, not yet tested in the live client.

@@ -68,7 +68,10 @@ local function lastScan(id)
     return h and h[#h] and h[#h][1]
 end
 
-local function profName(skill) return RM.Data:ProfessionName(skill) end
+local function profName(skill)
+    local name = RM.Data and RM.Data.ProfessionName and RM.Data:ProfessionName(skill)
+    return name or L["PROF_" .. skill] or tostring(skill)
+end
 
 ---------------------------------------------------------------------------
 -- Tab: Hot (resale of vendor recipes)
@@ -369,7 +372,16 @@ function UI:ShowTab(key)
 end
 
 function UI:Toggle(tab)
-    if not frame then create() end
+    if not frame then
+        local ok, err = pcall(create)
+        if not ok then
+            -- a half-built window would fail on every later call: drop it and report once
+            if frame then frame:Hide() end
+            frame, tabs, pages = nil, {}, {}
+            geterrorhandler()(err)
+            return
+        end
+    end
     if frame:IsShown() and (not tab or tab == self.tab) then frame:Hide() return end
     frame:Show()
     self:ShowTab(tab or self.tab or "hot")
@@ -378,6 +390,7 @@ end
 local pending
 function UI:Refresh()
     if not frame or not frame:IsShown() then return end
+    if not frame.footer then return end
     if not RM.Data.ready then
         frame.footer:SetText(L["Loading recipe data from QuestieDB..."])
         return
