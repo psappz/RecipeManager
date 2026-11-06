@@ -7,7 +7,7 @@
 ## Notes-itIT: Avvisa vicino ai venditori di ricette, segnala le ricette a disponibilità limitata e mostra il loro valore all'asta. WoW Forever.
 ## Notes-ptBR: Avisa perto de vendedores de receitas, marca receitas de estoque limitado e mostra o valor na casa de leilões. WoW Forever.
 ## Author: psappz
-## Version: 1.3.2
+## Version: 1.3.3
 ## Dependencies: QuestieDB
 ## OptionalDeps: Auctionator, Auc-Advanced, TradeSkillMaster, TomTom, Syndicator, Journalator
 ## SavedVariables: RecipeManagerDB

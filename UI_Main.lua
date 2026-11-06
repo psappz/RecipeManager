@@ -101,11 +101,14 @@ local function buildHotPage(page)
     page.hint = W:Text(page, "GameFontDisableSmall")
     page.hint:SetPoint("TOPRIGHT", page, "TOPRIGHT", -10, y - 6)
 
+    W.sortHint = L["Click: sort ascending - click again: descending"]
     page.table = W:Table(page, {
-        { "name", L["Recipe"], 220 }, { "prof", L["Profession"], 92 }, { "skill", L["Skill"], 38, "RIGHT" },
-        { "vendor", L["Vendor / Zone"], 150 }, { "ek", L["Vendor price"], 58, "RIGHT" },
-        { "ah", L["AH recipe"], 70, "RIGHT" }, { "margin", L["Margin"], 70, "RIGHT" },
-        { "sold", L["Sold for"], 70, "RIGHT" }, { "evidence", L["Evidence"], 82 }, { "status", L["Status"], 100 },
+        { "name", L["Recipe"], 220, nil, L["TIP_RECIPE_HOT"] }, { "prof", L["Profession"], 92, nil, L["TIP_PROF"] },
+        { "skill", L["Skill"], 38, "RIGHT", L["TIP_SKILL"] },
+        { "vendor", L["Vendor / Zone"], 150, nil, L["TIP_VENDOR"] }, { "ek", L["Vendor price"], 58, "RIGHT", L["TIP_EK"] },
+        { "ah", L["AH recipe"], 70, "RIGHT", L["TIP_AH"] }, { "margin", L["Margin"], 70, "RIGHT", L["TIP_MARGIN"] },
+        { "sold", L["Sold for"], 70, "RIGHT", L["TIP_SOLD"] }, { "evidence", L["Evidence"], 82, nil, L["TIP_EVIDENCE"] },
+        { "status", L["Status"], 100, nil, L["TIP_STATUS"] },
     }, 22, 17, function(item) UI:SelectRecipe(item.itemID, item.npc, item.point) end)
     page.table:SetPoint("TOPLEFT", page, "TOPLEFT", 4, y - 30)
     page.table:SetPoint("RIGHT", page, "RIGHT", -4, 0)
@@ -139,6 +142,8 @@ local function hotRows()
                         status = s.color .. s.text .. "|r",
                         -- with sales evidence: expected profit per listing; without: listed margin, ranked below
                         sortMargin = (ev and ev.profit) and (1e9 + ev.profit) or (s.margin or -1e12),
+                        -- evidence column: success rate, more auctions first on equal rate
+                        sortValues = { evidence = ev and ev.rate and (ev.rate + math.min(ev.s + ev.f, 999) / 1e6) or false },
                         luxColumn = s.lux and 1 or nil,
                         bg = s.limited and { 0.16, 0.08, 0.03 } or (s.hot and { 0.13, 0.1, 0.05 }) or nil,
                         border = s.limited and { 1, 0.42, 0.24 } or nil,
@@ -192,11 +197,13 @@ local function buildRecipePage(page)
     page.count:SetPoint("TOPRIGHT", page, "TOPRIGHT", -10, -42)
     page.near, page.radius, page.unit, page.prof = near, radius, unit, prof
 
+    W.sortHint = L["Click: sort ascending - click again: descending"]
     page.table = W:Table(page, {
-        { "name", L["Recipe"], 245 }, { "skill", L["Skill"], 40, "RIGHT" }, { "source", L["Source / Vendor"], 170 },
-        { "dist", L["Distance"], 65, "RIGHT" }, { "ek", L["Vendor price"], 65, "RIGHT" },
-        { "ah", L["AH recipe"], 75, "RIGHT" }, { "margin", L["Margin"], 75, "RIGHT" },
-        { "product", L["AH product"], 75, "RIGHT" }, { "craft", L["Craft profit"], 75, "RIGHT" },
+        { "name", L["Recipe"], 245, nil, L["TIP_RECIPE"] }, { "skill", L["Skill"], 40, "RIGHT", L["TIP_SKILL"] },
+        { "source", L["Source / Vendor"], 170, nil, L["TIP_SOURCE"] },
+        { "dist", L["Distance"], 65, "RIGHT", L["TIP_DIST"] }, { "ek", L["Vendor price"], 65, "RIGHT", L["TIP_EK"] },
+        { "ah", L["AH recipe"], 75, "RIGHT", L["TIP_AH"] }, { "margin", L["Margin"], 75, "RIGHT", L["TIP_MARGIN"] },
+        { "product", L["AH product"], 75, "RIGHT", L["TIP_PRODUCT"] }, { "craft", L["Craft profit"], 75, "RIGHT", L["TIP_CRAFT"] },
     }, 22, 12, function(item)
         selected = { itemID = item.itemID, npc = item.npc, point = item.point }
         UI:Refresh()
@@ -273,6 +280,7 @@ local function recipeRows()
                         product = product and product.ah and RM:Money(product.ah) or "-",
                         craft = (product and product.craft and RM.Prof:Skill(rec.skillLine)) and RM:Money(product.craft) or "-",
                         sortDist = dist or 1e9,
+                        sortValues = { dist = dist or false },
                         luxColumn = (tradable and s.lux) and 1 or nil,
                         selected = isSel,
                         bg = isSel and { 0.16, 0.13, 0.08 } or (s.limited and { 0.16, 0.08, 0.03 }) or nil,

@@ -193,6 +193,32 @@ function W:Cycle(parent, width, options, get, set)
 end
 
 -- Scrollable table: columns = { { key, title, width, justify } }, rows = list of tables with the same keys
+-- Plain text of a cell: no colour codes, icons or [TAGS]
+function W.PlainText(text)
+    text = tostring(text or "")
+    text = text:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("|T.-|t", ""):gsub("%[.-%]%s*", "")
+    return (text:gsub("^%s+", ""):gsub("%s+$", ""))
+end
+
+-- Sort value of a cell: money as gold (1g 2s 3c = 1.0203), numbers as numbers, text lower case; nil = missing
+function W.SortValue(text, numeric)
+    local plain = W.PlainText(text)
+    if plain == "" or plain == "-" or plain == "?" then return nil end
+    local neg, rest = plain:match("^(%-?)(.*)$")
+    if rest:find("^%d+%s*[gsc]") and rest:gsub("%d+%s*[gsc]", ""):gsub("%s", "") == "" then
+        local v = 0
+        for n, u in rest:gmatch("(%d+)%s*([gsc])") do
+            v = v + tonumber(n) / ((u == "g" and 1) or (u == "s" and 100) or 10000)
+        end
+        return neg == "-" and -v or v
+    end
+    local lead = plain:match("^%-?%d+%.?%d*")
+    local n = tonumber(plain) or (lead and tonumber(lead))
+    if n then return n end
+    if numeric then return nil end -- "no price", "not tradable" in a number column
+    return plain:lower()
+end
+
 function W:Table(parent, columns, rowHeight, visibleRows, onClick)
     local t = CreateFrame("Frame", nil, parent)
     t.columns, t.rowHeight, t.visible, t.offset, t.data = columns, rowHeight or 22, visibleRows or 14, 0, {}
@@ -202,12 +228,40 @@ function W:Table(parent, columns, rowHeight, visibleRows, onClick)
     header:SetPoint("TOPLEFT")
     header:SetPoint("TOPRIGHT")
     header:SetHeight(t.rowHeight)
+    -- column header: { key, label, width, justify, tooltip }; click sorts ascending, again descending
+    t.heads = {}
     local x = 6
-    for _, c in ipairs(columns) do
-        local fs = W:Text(header, "GameFontNormalSmall", c[2])
-        fs:SetPoint("LEFT", header, "LEFT", x, 0)
-        fs:SetWidth(c[3] - 6)
-        fs:SetJustifyH(c[4] or "LEFT")
+    for ci, c in ipairs(columns) do
+        local h = CreateFrame("Button", nil, header)
+        h:SetPoint("LEFT", header, "LEFT", x - 3, 0)
+        h:SetSize(c[3], t.rowHeight)
+        h.text = W:Text(h, "GameFontNormalSmall", c[2])
+        h.text:SetPoint("LEFT", 3, 0)
+        h.text:SetWidth(c[3] - 6)
+        h.text:SetJustifyH(c[4] or "LEFT")
+        h.text:SetWordWrap(false)
+        h.arrow = h:CreateTexture(nil, "OVERLAY")
+        h.arrow:SetTexture("Interface\\Buttons\\UI-SortArrow")
+        h.arrow:SetSize(9, 8)
+        h.arrow:Hide()
+        h.hl = h:CreateTexture(nil, "HIGHLIGHT")
+        h.hl:SetAllPoints()
+        h.hl:SetColorTexture(1, 0.82, 0, 0.08)
+        h:SetScript("OnClick", function()
+            if t.sortCol == ci then t.sortAsc = not t.sortAsc else t.sortCol, t.sortAsc = ci, true end
+            t.offset = 0
+            t:Sort()
+            t:Render()
+        end)
+        h:SetScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, "ANCHOR_TOP")
+            GameTooltip:AddLine(c[2], 1, 0.82, 0)
+            if c[5] then GameTooltip:AddLine(c[5], 1, 1, 1, true) end
+            if W.sortHint then GameTooltip:AddLine(W.sortHint, 0.5, 0.8, 1, true) end
+            GameTooltip:Show()
+        end)
+        h:SetScript("OnLeave", function() GameTooltip:Hide() end)
+        t.heads[ci] = h
         x = x + c[3]
     end
 
@@ -257,8 +311,49 @@ function W:Table(parent, columns, rowHeight, visibleRows, onClick)
 
     function t:SetData(data)
         self.data = data or {}
+        self:Sort()
         self.offset = math.min(self.offset, math.max(0, #self.data - self.visible))
         self:Render()
+    end
+
+    -- Sort by the clicked column. Rows keep the caller's order until a header is clicked.
+    -- Values: row.sortValues[key] if given, otherwise read from the cell text (money, number or text).
+    -- Missing values ("-", "no price", ...) always go to the end.
+    function t:Sort()
+        for i, h in ipairs(self.heads) do
+            h.arrow:SetShown(i == self.sortCol)
+            if i == self.sortCol then
+                h.arrow:ClearAllPoints()
+                local w = math.min(h.text:GetStringWidth(), h.text:GetWidth())
+                if (columns[i][4] or "LEFT") == "RIGHT" then h.arrow:SetPoint("RIGHT", h.text, "RIGHT", -w - 3, 0)
+                else h.arrow:SetPoint("LEFT", h.text, "LEFT", w + 3, 0) end
+                if self.sortAsc then h.arrow:SetTexCoord(0, 0.5625, 1, 0) else h.arrow:SetTexCoord(0, 0.5625, 0, 1) end
+            end
+        end
+        local c = self.sortCol and columns[self.sortCol]
+        if not c then return end
+        local key, numeric, asc = c[1], (c[4] == "RIGHT"), self.sortAsc
+        for i, item in ipairs(self.data) do
+            local v
+            if item.sortValues and item.sortValues[key] ~= nil then
+                v = item.sortValues[key]
+                if v == false then v = nil end
+            else
+                v = W.SortValue(item[key], numeric)
+            end
+            item._sv, item._si = v, i
+        end
+        table.sort(self.data, function(a, b)
+            local va, vb = a._sv, b._sv
+            if va == nil or vb == nil then
+                if va ~= nil then return true end
+                if vb ~= nil then return false end
+                return a._si < b._si
+            end
+            if type(va) ~= type(vb) then va, vb = tostring(va), tostring(vb) end
+            if va == vb then return a._si < b._si end
+            if asc then return va < vb else return va > vb end
+        end)
     end
 
     function t:Render()

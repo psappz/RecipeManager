@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.3
+
+### New
+- **Sortable tables** in the Hot and Vendor recipes tabs: click a column header to sort ascending, click again for descending. Gold, silver and copper sort by value; empty values ("-", "no price") always go last.
+- **Tooltips on every column header** explaining the column.
+
 ## 1.3.2
 
 ### Look
