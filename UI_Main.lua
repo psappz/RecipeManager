@@ -183,10 +183,8 @@ local function buildRecipePage(page)
     radius:SetPoint("LEFT", near.text, "RIGHT", 8, 0)
     local unit = W:Cycle(page, 70, function() return { { "yd", L["yards"] }, { "m", L["meters"] } } end,
         function() return RM.settings.unit end, function(v)
-            local yards = RM:RadiusYards(RM.settings.nearRadius)
             RM.settings.unit = v
             RM.settings.unitChosen = true
-            RM.settings.nearRadius = RM:ToUnit(yards)
             UI:Refresh()
         end)
     unit:SetPoint("LEFT", radius, "RIGHT", 6, 0)

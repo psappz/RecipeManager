@@ -6,7 +6,7 @@
 - **Real sales instead of listings.** A listing only shows that an auction existed, not that it sold. With **Journalator** installed (it records your own sold and expired auctions from the mailbox), RecipeManager shows per recipe how many of your auctions sold, the price actually achieved and the expected profit per listing. Hot recipes with real sales rank first, by expected profit; recipes without sales follow by listed margin.
 - **Buy suggestion:** how many to buy at the vendor, from the sell-through rate and the expected profit.
 - **Guild sales (opt-in, off by default):** RecipeManager users in a guild can share their own sales counts, so everyone sees real sales of the whole guild – data that exists nowhere else for Forever.
-- Distances in meters for all client languages except English (until you pick a unit yourself); the warning distance is shown in the chosen unit.
+- Distances are labeled in meters for all client languages except English (until you pick a unit yourself). As in the game, 1 yard = 1 meter: only the label changes, not the value.
 - Fixed: "only vendors within" overlapped its input field in longer languages.
 - New columns "Sold for" and "Evidence" in the Hot tab (the scan age column moved out); evidence also in the recipe tooltip and the detail panel.
 

@@ -116,11 +116,7 @@ function RM:InitDB()
     if not self.settings.unitChosen then
         local loc = GetLocale()
         local want = (loc == "enUS" or loc == "enGB") and "yd" or "m"
-        if self.settings.unit ~= want then
-            if self.settings.unit == "yd" and want == "m" then self.settings.nearRadius = math.floor((self.settings.nearRadius or 300) * 0.9144 + 0.5) end
-            if self.settings.unit == "m" and want == "yd" then self.settings.nearRadius = math.floor((self.settings.nearRadius or 300) / 0.9144 + 0.5) end
-            self.settings.unit = want
-        end
+        self.settings.unit = want
     end
     self.realm = r
     self.char = c
@@ -154,19 +150,18 @@ end
 function RM:FormatDistance(yards)
     if not yards then return "-" end
     if self.settings.unit == "m" then
-        return string.format("%d m", math.floor(yards * 0.9144 + 0.5))
+        return string.format("%d m", math.floor(yards + 0.5))
     end
     return string.format("%d yd", math.floor(yards + 0.5))
 end
 
--- the warning distance is stored in yards; shown in the chosen unit
-function RM:ToUnit(yards) return (self.settings.unit == "m") and math.floor(yards * 0.9144 + 0.5) or math.floor(yards + 0.5) end
-function RM:FromUnit(v) return (self.settings.unit == "m") and math.floor(v / 0.9144 + 0.5) or math.floor(v + 0.5) end
+-- In WoW 1 yard = 1 meter (Blizzard's convention in localized clients): only the label changes, never the value.
+function RM:ToUnit(yards) return math.floor(yards + 0.5) end
+function RM:FromUnit(v) return math.floor(v + 0.5) end
 function RM:UnitLabel() return (self.settings.unit == "m") and ns.L["meters"] or ns.L["yards"] end
 
 -- radius setting is stored in the chosen unit; convert to yards
 function RM:RadiusYards(value)
-    if self.settings.unit == "m" then return value / 0.9144 end
     return value
 end
 
