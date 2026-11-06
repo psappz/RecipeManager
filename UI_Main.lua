@@ -316,6 +316,11 @@ local function renderDetail(page)
         if restock then txt = txt .. " - " .. string.format(L["restock about %d min"], math.floor(restock / 60)) end
         if o and o.lastAvail then txt = txt .. " - " .. string.format(L["last seen in stock %s ago"], age(o.lastAvail)) end
         table.insert(lines, txt)
+        local g = RM.Sales:GuildStock(npc, id)
+        if g and (not o or not o.last or g.t > o.last) then
+            table.insert(lines, "|cff69ccf0" .. string.format(g.avail > 0 and L["guild: %s saw %d in stock %s ago"] or L["guild: %s saw it sold out %s ago"],
+                g.who or "?", g.avail > 0 and g.avail or age(g.t), g.avail > 0 and age(g.t) or nil) .. "|r")
+        end
     end
     local owned = RM.Int:OwnedText(id)
     if owned then table.insert(lines, "|cff8fe39b" .. owned .. "|r") end

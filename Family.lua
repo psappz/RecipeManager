@@ -38,3 +38,53 @@ function F.Missing()
     for _, name in ipairs(F.MEMBERS) do if state(name) == "missing" then table.insert(out, name) end end
     return out
 end
+
+-- Opens a sibling addon's main window (only when it is loaded)
+function F.Open(name)
+    if state(name) ~= "loaded" then return false end
+    if name == "LegacyManager" and _G.LegacyManagerAPI and LegacyManagerAPI.Open then return pcall(LegacyManagerAPI.Open) end
+    local fn = SlashCmdList and SlashCmdList[string.upper(name)]
+    if fn then return pcall(fn, "") end
+    return false
+end
+
+-- Clickable family bar: "Manager family:  [ok] ConfigManager  [ok] LegacyManager ..."
+function F.Bar(parent, title, font)
+    local bar = CreateFrame("Frame", nil, parent)
+    bar:SetSize(10, 16)
+    bar.title = bar:CreateFontString(nil, "OVERLAY", font or "GameFontHighlightSmall")
+    bar.title:SetPoint("LEFT")
+    bar.title:SetText((title or "Manager family") .. ":")
+    bar.buttons = {}
+    local prev = bar.title
+    for _, name in ipairs(F.MEMBERS) do
+        local b = CreateFrame("Button", nil, bar)
+        b:SetHeight(16)
+        b.text = b:CreateFontString(nil, "OVERLAY", font or "GameFontHighlightSmall")
+        b.text:SetPoint("LEFT")
+        b:SetPoint("LEFT", prev, "RIGHT", 10, 0)
+        b.name = name
+        b:SetScript("OnClick", function(self) F.Open(self.name) end)
+        b:SetScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, "ANCHOR_TOP")
+            GameTooltip:AddLine(self.name, 1, 0.82, 0)
+            if state(self.name) == "loaded" then GameTooltip:AddLine("Click: open", 1, 1, 1)
+            else GameTooltip:AddLine(F.URL, 0.7, 0.7, 0.7) end
+            GameTooltip:Show()
+        end)
+        b:SetScript("OnLeave", function() GameTooltip:Hide() end)
+        bar.buttons[#bar.buttons + 1] = b
+        prev = b
+    end
+    function bar:Refresh()
+        for _, b in ipairs(self.buttons) do
+            local s = state(b.name)
+            local icon = (s == "missing") and MISSING or READY
+            local color = (s == "loaded") and "|cffffffff" or "|cff9a9a9a"
+            b.text:SetText(icon .. " " .. color .. b.name .. "|r")
+            b:SetWidth(b.text:GetStringWidth())
+        end
+    end
+    bar:Refresh()
+    return bar
+end

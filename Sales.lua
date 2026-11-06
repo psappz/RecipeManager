@@ -109,6 +109,16 @@ RM:On("CHAT_MSG_ADDON", function(_, prefix, msg, channel, sender)
         C_Timer.After(math.random(2, 15), function() S:Share() end)
     elseif kind == "R" then
         store[who] = { t = time(), items = {} }
+    elseif kind == "L" and body then
+        -- Limited Supply sighting: npc:item:available:time
+        RM.realm.guildStock = RM.realm.guildStock or {}
+        for npc, id, avail, t in body:gmatch("(%d+):(%d+):(%d+):(%d+)") do
+            npc, id, avail, t = tonumber(npc), tonumber(id), tonumber(avail), tonumber(t)
+            local st = RM.realm.guildStock[npc] or {}
+            RM.realm.guildStock[npc] = st
+            if not st[id] or st[id].t < t then st[id] = { avail = avail, t = t, who = who } end
+        end
+        RM:Fire("PRICES_CHANGED")
     elseif kind == "S" and body then
         local rec = store[who] or { t = time(), items = {} }
         store[who] = rec
@@ -119,6 +129,36 @@ RM:On("CHAT_MSG_ADDON", function(_, prefix, msg, channel, sender)
         RM:Fire("PRICES_CHANGED")
     end
 end)
+
+-- Share what I just saw at a vendor: Limited Supply recipes and how many are in stock
+function S:ShareStock(npc, obs)
+    if not (RM.settings.shareGuild and IsInGuild() and register()) then return end
+    local parts, now = {}, time()
+    for id, o in pairs(obs) do
+        if o.limited and o.last and now - o.last < 60 then
+            table.insert(parts, string.format("%d:%d:%d:%d", npc, id, math.max(0, o.avail or 0), o.last))
+        end
+    end
+    if #parts == 0 then return end
+    local buf, len = {}, 0
+    for _, p in ipairs(parts) do
+        if len + #p + 1 > 240 then
+            pcall(C_ChatInfo.SendAddonMessage, PREFIX, "L|" .. table.concat(buf, ";"), "GUILD")
+            buf, len = {}, 0
+        end
+        table.insert(buf, p)
+        len = len + #p + 1
+    end
+    if #buf > 0 then pcall(C_ChatInfo.SendAddonMessage, PREFIX, "L|" .. table.concat(buf, ";"), "GUILD") end
+end
+
+-- Latest guild sighting of a Limited Supply recipe at a vendor: { avail, t, who } or nil
+function S:GuildStock(npc, id)
+    if not (RM.settings.shareGuild and npc and RM.realm.guildStock) then return nil end
+    local st = RM.realm.guildStock[npc]
+    local e = st and st[id]
+    if e and time() - e.t < 7 * 86400 then return e end
+end
 
 function S:Request()
     if RM.settings.shareGuild and IsInGuild() and register() then

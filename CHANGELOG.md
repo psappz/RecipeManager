@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.1
+
+### New
+- **Limited Supply sightings in the guild:** with guild sharing on, a vendor visit tells guild members which Limited Supply recipes are in stock; the detail panel shows the latest guild sighting.
+- **Manager family bar** in the settings is clickable: opens the other installed Manager addons.
+
 ## 1.3.0
 
 ### New

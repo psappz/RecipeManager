@@ -109,7 +109,7 @@ function S.Build(page)
     i2:SetPoint("TOPLEFT", 240, -200)
     local i3 = add(W:Check(w, L["No warning for recipes you already own (Syndicator)"], function() return set.skipOwned end, function(v) set.skipOwned = v end))
     i3:SetPoint("TOPLEFT", 8, -224)
-    local i4 = add(W:Check(w, L["Share my sales with RecipeManager users in my guild"], function() return set.shareGuild end, function(v)
+    local i4 = add(W:Check(w, L["Share sales and Limited Supply sightings with RecipeManager users in my guild"], function() return set.shareGuild end, function(v)
         set.shareGuild = v
         if v then RM.Sales:Share(true) RM.Sales:Request() end
     end))
@@ -119,7 +119,7 @@ function S.Build(page)
     local t = W:Panel(page)
     t:SetPoint("TOPLEFT", box, "BOTTOMLEFT", 0, -8)
     t:SetPoint("BOTTOMRIGHT", page, "BOTTOMRIGHT", -4, 4)
-    page.family = W:Text(t, "GameFontDisableSmall")
+    page.family = ns.Family.Bar(t, L["Manager family"])
     page.family:SetPoint("BOTTOMLEFT", 10, 8)
     page.twinkHeader = W:Text(t, "GameFontNormal")
     page.twinkHeader:SetPoint("TOPLEFT", 10, -8)
@@ -158,7 +158,7 @@ function S:Refresh(page)
     page.srcHint:SetText(any and string.format(L["RecipeScan is locked because %s shares its prices."], L["SRC_" .. any])
         or L["No AH addon with shared prices found: RecipeScan can be used (button in the auction house)."])
 
-    page.family:SetText(ns.Family.Line(L["Manager family"]) .. "  |cff9a9488" .. ns.Family.URL .. "|r")
+    page.family:Refresh()
 
     -- current character first, then twinks
     local names = { RM.playerName }

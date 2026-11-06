@@ -64,6 +64,7 @@ function M:Scan()
     end
     if foundRecipe then
         RM.realm.observations[npc] = obs
+        if RM.Sales then RM.Sales:ShareStock(npc, obs) end
         local _, _, _, map, x, y = RM:PlayerWorldPos()
         local f = UnitFactionGroup("npc")
         RM.realm.vendors[npc] = {

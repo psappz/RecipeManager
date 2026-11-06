@@ -18,6 +18,9 @@ local locale = GetLocale()
 local T
 
 if locale == "deDE" then T = {
+    ["Share sales and Limited Supply sightings with RecipeManager users in my guild"] = "Verkäufe und Limited-Supply-Sichtungen mit RecipeManager-Nutzern meiner Gilde teilen",
+    ["guild: %s saw %d in stock %s ago"] = "Gilde: %s sah %d auf Lager vor %s",
+    ["guild: %s saw it sold out %s ago"] = "Gilde: %s sah es ausverkauft vor %s",
     ["Warning distance"] = "Warnabstand",
     ["Sold for"] = "Erzielt",
     ["Evidence"] = "Beleg",
@@ -105,6 +108,9 @@ if locale == "deDE" then T = {
 } end
 
 if locale == "frFR" then T = {
+    ["Share sales and Limited Supply sightings with RecipeManager users in my guild"] = "Partager ventes et stocks Limited Supply avec les utilisateurs de RecipeManager de ma guilde",
+    ["guild: %s saw %d in stock %s ago"] = "guilde : %s en a vu %d en stock il y a %s",
+    ["guild: %s saw it sold out %s ago"] = "guilde : %s l'a vu épuisé il y a %s",
     ["Warning distance"] = "Distance d'alerte",
     ["Sold for"] = "Vendu",
     ["Evidence"] = "Preuve",
@@ -181,6 +187,9 @@ if locale == "frFR" then T = {
 } end
 
 if locale == "esES" or locale == "esMX" then T = {
+    ["Share sales and Limited Supply sightings with RecipeManager users in my guild"] = "Compartir ventas y avistamientos de Limited Supply con usuarios de RecipeManager de mi hermandad",
+    ["guild: %s saw %d in stock %s ago"] = "hermandad: %s vio %d en stock hace %s",
+    ["guild: %s saw it sold out %s ago"] = "hermandad: %s lo vio agotado hace %s",
     ["Warning distance"] = "Distancia de aviso",
     ["Sold for"] = "Vendido",
     ["Evidence"] = "Prueba",
@@ -255,6 +264,9 @@ if locale == "esES" or locale == "esMX" then T = {
 } end
 
 if locale == "itIT" then T = {
+    ["Share sales and Limited Supply sightings with RecipeManager users in my guild"] = "Condividi vendite e avvistamenti Limited Supply con gli utenti RecipeManager della mia gilda",
+    ["guild: %s saw %d in stock %s ago"] = "gilda: %s ne ha visti %d disponibili %s fa",
+    ["guild: %s saw it sold out %s ago"] = "gilda: %s l'ha visto esaurito %s fa",
     ["Warning distance"] = "Distanza di avviso",
     ["Sold for"] = "Venduto",
     ["Evidence"] = "Prova",
@@ -329,6 +341,9 @@ if locale == "itIT" then T = {
 } end
 
 if locale == "ptBR" or locale == "ptPT" then T = {
+    ["Share sales and Limited Supply sightings with RecipeManager users in my guild"] = "Compartilhar vendas e avistamentos de Limited Supply com usuários do RecipeManager da minha guilda",
+    ["guild: %s saw %d in stock %s ago"] = "guilda: %s viu %d em estoque há %s",
+    ["guild: %s saw it sold out %s ago"] = "guilda: %s viu esgotado há %s",
     ["Warning distance"] = "Distância de aviso",
     ["Sold for"] = "Vendido",
     ["Evidence"] = "Prova",
