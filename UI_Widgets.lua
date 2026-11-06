@@ -233,8 +233,9 @@ function W:Table(parent, columns, rowHeight, visibleRows, onClick)
         r.icon:SetSize(14, 14)
         r.icon:SetTexture("Interface\\MoneyFrame\\UI-GoldIcon")
         r.icon:Hide()
-        r:SetScript("OnClick", function(self)
-            if self.item and onClick then onClick(self.item) end
+        r:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+        r:SetScript("OnClick", function(self, button)
+            if self.item and onClick then onClick(self.item, button) end
         end)
         r:SetScript("OnEnter", function(self)
             if self.item and self.item.itemID then
