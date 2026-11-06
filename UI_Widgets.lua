@@ -26,21 +26,76 @@ function W:Text(parent, template, text)
     return fs
 end
 
+-- Flat button: own look, width grows with the (translated) text so it never touches the border
+local PAD = 12
+local function fitWidth(b)
+    local need = math.ceil((b.label:GetStringWidth() or 0) + 2 * PAD)
+    b:SetWidth(math.max(b.minWidth or 0, need))
+end
+
+local function paintButton(b)
+    if not b:IsEnabled() then
+        b:SetBackdropColor(0.08, 0.07, 0.05, 1)
+        b:SetBackdropBorderColor(0.18, 0.15, 0.1, 1)
+        b.label:SetTextColor(0.45, 0.43, 0.38)
+    elseif b.down then
+        b:SetBackdropColor(0.24, 0.19, 0.09, 1)
+        b:SetBackdropBorderColor(0.78, 0.63, 0.29, 1)
+        b.label:SetTextColor(1, 0.82, 0)
+    elseif b.hover then
+        b:SetBackdropColor(0.17, 0.14, 0.08, 1)
+        b:SetBackdropBorderColor(0.78, 0.63, 0.29, 1)
+        b.label:SetTextColor(1, 0.9, 0.6)
+    else
+        b:SetBackdropColor(0.12, 0.1, 0.06, 1)
+        b:SetBackdropBorderColor(0.4, 0.33, 0.2, 1)
+        b.label:SetTextColor(0.92, 0.88, 0.78)
+    end
+end
+
 function W:Button(parent, text, width, onClick)
-    local b = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
-    b:SetSize(width or 100, 22)
-    b:SetText(text)
-    b:SetScript("OnClick", onClick)
+    local b = CreateFrame("Button", nil, parent, "BackdropTemplate")
+    b:SetBackdrop(BACKDROP)
+    b:SetHeight(22)
+    b.minWidth = width or 60
+    b.label = b:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    b.label:SetPoint("CENTER")
+    b:SetFontString(b.label)
+    local nativeSetText = b.SetText
+    function b:SetText(t) nativeSetText(self, t or "") fitWidth(self) end
+    b:SetText(text or "")
+    b:SetScript("OnEnter", function(self) self.hover = true paintButton(self) end)
+    b:SetScript("OnLeave", function(self) self.hover = false self.down = false paintButton(self) end)
+    b:SetScript("OnMouseDown", function(self) if self:IsEnabled() then self.down = true paintButton(self) end end)
+    b:SetScript("OnMouseUp", function(self) self.down = false paintButton(self) end)
+    b:SetScript("OnEnable", paintButton)
+    b:SetScript("OnDisable", paintButton)
+    if onClick then b:SetScript("OnClick", onClick) end
+    paintButton(b)
     return b
 end
 
--- Toggle button with an "on" look (filters, tabs)
+-- Small close button ("x") in the window's corner
+function W:Close(parent, onClick)
+    local b = W:Button(parent, "x", 20, onClick or function() parent:Hide() end)
+    b:SetSize(20, 20)
+    b.minWidth = 20
+    b:SetPoint("TOPRIGHT", -6, -6)
+    return b
+end
+
+-- Toggle button with an "on" look (filters, tabs); also grows with its text
 function W:Toggle(parent, text, width, get, set)
     local b = CreateFrame("Button", nil, parent, "BackdropTemplate")
-    b:SetSize(width or 90, 22)
+    b:SetHeight(22)
+    b.minWidth = width or 90
     b:SetBackdrop(BACKDROP)
     b.label = W:Text(b, "GameFontHighlightSmall", text)
     b.label:SetPoint("CENTER")
+    fitWidth(b)
+    local label = b.label
+    local nativeSet = label.SetText
+    function label:SetText(t) nativeSet(self, t) fitWidth(b) end
     function b:Refresh()
         local on = get()
         if on then
@@ -58,13 +113,30 @@ function W:Toggle(parent, text, width, get, set)
     return b
 end
 
+-- Checkbox: own square box; the label is part of the clickable area
+function W:CheckBox(parent, size)
+    local c = CreateFrame("CheckButton", nil, parent, "BackdropTemplate")
+    size = size or 16
+    c:SetSize(size, size)
+    c:SetBackdrop(BACKDROP)
+    c:SetBackdropColor(0.06, 0.05, 0.03, 1)
+    c:SetBackdropBorderColor(0.54, 0.45, 0.28, 1)
+    local mark = c:CreateTexture(nil, "ARTWORK")
+    mark:SetColorTexture(1, 0.82, 0, 1)
+    mark:SetPoint("TOPLEFT", 3, -3)
+    mark:SetPoint("BOTTOMRIGHT", -3, 3)
+    c:SetCheckedTexture(mark)
+    local hl = c:CreateTexture(nil, "HIGHLIGHT")
+    hl:SetColorTexture(1, 0.82, 0, 0.15)
+    hl:SetAllPoints()
+    return c
+end
+
 function W:Check(parent, text, get, set)
-    local c = CreateFrame("CheckButton", nil, parent, "UICheckButtonTemplate")
-    c:SetSize(24, 24)
-    c.text = c.text or c.Text or W:Text(c, "GameFontHighlightSmall")
-    c.text:ClearAllPoints()
-    c.text:SetPoint("LEFT", c, "RIGHT", 2, 0)
-    c.text:SetText(text)
+    local c = W:CheckBox(parent, 16)
+    c.text = W:Text(c, "GameFontHighlightSmall", text)
+    c.text:SetPoint("LEFT", c, "RIGHT", 6, 0)
+    c:SetHitRectInsets(0, -((c.text:GetStringWidth() or 0) + 8), -3, -3)
     c:SetChecked(get())
     c:SetScript("OnClick", function(self) set(self:GetChecked() and true or false) end)
     function c:Refresh() self:SetChecked(get()) end
@@ -72,7 +144,13 @@ function W:Check(parent, text, get, set)
 end
 
 function W:Number(parent, width, get, set)
-    local e = CreateFrame("EditBox", nil, parent, "InputBoxTemplate")
+    local e = CreateFrame("EditBox", nil, parent, "BackdropTemplate")
+    e:SetBackdrop(BACKDROP)
+    e:SetBackdropColor(0.04, 0.035, 0.02, 1)
+    e:SetBackdropBorderColor(0.4, 0.33, 0.2, 1)
+    e:SetFontObject(GameFontHighlightSmall)
+    e:SetTextInsets(6, 6, 0, 0)
+    e:SetJustifyH("CENTER")
     e:SetSize(width or 50, 20)
     e:SetAutoFocus(false)
     e:SetText(tostring(get()))
@@ -85,6 +163,8 @@ function W:Number(parent, width, get, set)
     e:SetScript("OnEnterPressed", commit)
     e:SetScript("OnEditFocusLost", commit)
     e:SetScript("OnEscapePressed", function(self) self:SetText(tostring(get())) self:ClearFocus() end)
+    e:SetScript("OnEditFocusGained", function(self) self:SetBackdropBorderColor(0.78, 0.63, 0.29, 1) self:HighlightText() end)
+    e:HookScript("OnEditFocusLost", function(self) self:SetBackdropBorderColor(0.4, 0.33, 0.2, 1) end)
     function e:Refresh() self:SetText(tostring(get())) end
     return e
 end

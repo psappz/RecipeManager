@@ -67,6 +67,10 @@ local GLOBAL_DEFAULTS = {
     muted = {},               -- [npcID] = true
     minimap = { hide = false },
     arrow = { point = "CENTER", x = 0, y = 180 },
+    tooltip = true,           -- recipe info in item tooltips
+    useTomTom = false,        -- TomTom arrow instead of the own arrow
+    skipOwned = true,         -- no warning for BoE recipes one of my characters already owns (Syndicator)
+    shareGuild = false,       -- share own sales counts (Journalator) with RecipeManager users in the guild
 }
 
 local function applyDefaults(t, defaults)

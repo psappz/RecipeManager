@@ -87,8 +87,8 @@ local function buildHotPage(page)
     for _, skill in ipairs(RM.Data.PROFESSION_ORDER) do
         local b = W:Toggle(page, profName(skill), 96, function() return hotFilter.profs[skill] end,
             function(v) hotFilter.profs[skill] = v UI:Refresh() end)
-        b:SetPoint("TOPLEFT", page, "TOPLEFT", x, y)
-        x = x + 100
+        local last = page.profButtons[#page.profButtons]
+        if last then b:SetPoint("LEFT", last, "RIGHT", 4, 0) else b:SetPoint("TOPLEFT", page, "TOPLEFT", x, y) end
         table.insert(page.profButtons, b)
     end
     y = y - 28
@@ -102,10 +102,10 @@ local function buildHotPage(page)
     page.hint:SetPoint("TOPRIGHT", page, "TOPRIGHT", -10, y - 6)
 
     page.table = W:Table(page, {
-        { "name", L["Recipe"], 250 }, { "prof", L["Profession"], 105 }, { "skill", L["Skill"], 45, "RIGHT" },
-        { "vendor", L["Vendor / Zone"], 182 }, { "ek", L["Vendor price"], 70, "RIGHT" },
-        { "ah", L["AH recipe"], 80, "RIGHT" }, { "margin", L["Margin"], 80, "RIGHT" },
-        { "scan", L["Scan"], 45, "RIGHT" }, { "status", L["Status"], 100 },
+        { "name", L["Recipe"], 220 }, { "prof", L["Profession"], 92 }, { "skill", L["Skill"], 38, "RIGHT" },
+        { "vendor", L["Vendor / Zone"], 150 }, { "ek", L["Vendor price"], 58, "RIGHT" },
+        { "ah", L["AH recipe"], 70, "RIGHT" }, { "margin", L["Margin"], 70, "RIGHT" },
+        { "sold", L["Sold for"], 70, "RIGHT" }, { "evidence", L["Evidence"], 82 }, { "status", L["Status"], 100 },
     }, 22, 17, function(item) UI:SelectRecipe(item.itemID, item.npc, item.point) end)
     page.table:SetPoint("TOPLEFT", page, "TOPLEFT", 4, y - 30)
     page.table:SetPoint("RIGHT", page, "RIGHT", -4, 0)
@@ -122,6 +122,7 @@ local function hotRows()
                     and (not hotFilter.onlyForever or rec.learned) then
                     local name, color = itemName(id)
                     local v = RM.Data.vendors[npc]
+                    local ev = RM.Sales:Evidence(id, s.vendorPrice, s.limited)
                     local tags = s.limited and ("|cffff6a3d[" .. L["LIMITED"] .. "]|r ") or ""
                     if s.hot then tags = tags .. "|cffffb100[" .. L["HOT"] .. "]|r " end
                     table.insert(rows, {
@@ -133,9 +134,11 @@ local function hotRows()
                         ek = s.vendorPrice and RM:Money(s.vendorPrice) or "-",
                         ah = s.ahPrice and RM:Money(s.ahPrice) or ("|cff8a8270" .. L["no price"] .. "|r"),
                         margin = s.margin and ((s.hot and "|cffffd100" or "") .. RM:Money(s.margin) .. "|r") or "-",
-                        scan = age(lastScan(id)),
+                        sold = ev and ev.realized and RM:Money(ev.realized) or "|cff8a8270-|r",
+                        evidence = RM.Sales:EvidenceText(ev) .. ((ev and ev.buy and ev.buy > 0) and (" |cffffd100x" .. ev.buy .. "|r") or ""),
                         status = s.color .. s.text .. "|r",
-                        sortMargin = s.margin or -1e12,
+                        -- with sales evidence: expected profit per listing; without: listed margin, ranked below
+                        sortMargin = (ev and ev.profit) and (1e9 + ev.profit) or (s.margin or -1e12),
                         luxColumn = s.lux and 1 or nil,
                         bg = s.limited and { 0.16, 0.08, 0.03 } or (s.hot and { 0.13, 0.1, 0.05 }) or nil,
                         border = s.limited and { 1, 0.42, 0.24 } or nil,
@@ -167,9 +170,9 @@ local function buildRecipePage(page)
         { "Expert", "Expert 150-225" }, { "Artisan", "Artisan 225-300" } }) do
         local b = W:Toggle(page, r[2], r[1] == "all" and 50 or 120, function() return recFilter.rank == r[1] end,
             function() recFilter.rank = r[1] UI:Refresh() end)
-        b:SetPoint("TOPLEFT", page, "TOPLEFT", x, -8)
-        x = x + (r[1] == "all" and 54 or 124)
         page.rankButtons = page.rankButtons or {}
+        local last = page.rankButtons[#page.rankButtons]
+        if last then b:SetPoint("LEFT", last, "RIGHT", 4, 0) else b:SetPoint("LEFT", prof, "RIGHT", 10, 0) end
         table.insert(page.rankButtons, b)
     end
     local near = W:Check(page, L["only vendors within"], function() return RM.settings.nearOnly end,
@@ -218,6 +221,14 @@ local function buildRecipePage(page)
         if selected and selected.npc then RM.settings.muted[selected.npc] = true RM:Print(L["Vendor muted."]) end
     end)
     d.mute:SetPoint("TOPRIGHT", d.arrow, "BOTTOMRIGHT", 0, -4)
+    d.guild = W:Button(d, L["Post to guild"], 120, function()
+        if selected then RM.Int:PostToGuild(selected.itemID, selected.npc, selected.point) end
+    end)
+    d.guild:SetPoint("TOPRIGHT", d.mute, "BOTTOMRIGHT", 0, -4)
+    d.shop = W:Button(d, L["Auctionator list"], 120, function()
+        if selected then RM.Int:CreateShoppingList(selected.itemID) end
+    end)
+    d.shop:SetPoint("RIGHT", d.arrow, "LEFT", -6, 0)
     page.detail = d
 end
 
@@ -280,7 +291,7 @@ local function renderDetail(page)
     if not selected then
         d.title:SetText(L["Click a recipe for details."])
         d.left:SetText("") d.right:SetText("")
-        d.arrow:Hide() d.mute:Hide()
+        d.arrow:Hide() d.mute:Hide() d.guild:Hide() d.shop:Hide()
         return
     end
     local id, npc = selected.itemID, selected.npc
@@ -302,11 +313,27 @@ local function renderDetail(page)
         if o and o.lastAvail then txt = txt .. " - " .. string.format(L["last seen in stock %s ago"], age(o.lastAvail)) end
         table.insert(lines, txt)
     end
+    local owned = RM.Int:OwnedText(id)
+    if owned then table.insert(lines, "|cff8fe39b" .. owned .. "|r") end
     d.left:SetText(table.concat(lines, "\n"))
     local r = {}
     table.insert(r, L["Sell recipe"] .. ": " .. L["Vendor price"] .. " " .. (s.vendorPrice and RM:Money(s.vendorPrice) or "-")
         .. "  ->  " .. L["AH"] .. " " .. (s.ahPrice and RM:Money(s.ahPrice) or L["no price"]))
     table.insert(r, L["Margin"] .. ": " .. (s.margin and RM:Money(s.margin) or "-") .. (s.lux and ("  |cffffd100" .. L["very lucrative"] .. "|r") or ""))
+    local ev = RM.Sales:Evidence(id, s.vendorPrice, s.limited)
+    if ev then
+        local src = (ev.src == "guild") and string.format(L["guild (%d players)"], ev.n or 1) or ((ev.src == "both") and L["own + guild"] or L["own (Journalator)"])
+        table.insert(r, L["Sales"] .. " " .. src .. ": " .. string.format(L["%d of %d sold"], ev.s, ev.s + ev.f)
+            .. (ev.realized and ("  -  " .. L["Sold for"] .. " " .. RM:Money(ev.realized)) or ""))
+        if ev.profit then
+            table.insert(r, L["Expected profit per listing"] .. ": " .. RM:Money(ev.profit)
+                .. ((ev.buy or 0) > 0 and ("  -  |cffffd100" .. string.format(L["buy %d at the vendor"], ev.buy) .. "|r") or ("  -  |cffe0806a" .. L["not worth buying"] .. "|r")))
+        end
+    elseif RM.Sales:HasJournalator() then
+        table.insert(r, "|cff8a8270" .. L["No sales recorded yet (Journalator)."] .. "|r")
+    else
+        table.insert(r, "|cff8a8270" .. L["Real sales: install Journalator."] .. "|r")
+    end
     local p = RM.Prices:Product(id)
     if p then
         local pname = itemName(p.id)
@@ -316,6 +343,8 @@ local function renderDetail(page)
     d.right:SetText(table.concat(r, "\n"))
     d.arrow:SetShown(npc ~= nil and selected.point ~= nil)
     d.mute:SetShown(npc ~= nil)
+    d.guild:SetShown(IsInGuild())
+    d.shop:SetShown(RM.Int:HasAuctionatorLists() and RM.Int:Reagents(id) ~= nil)
 end
 
 ---------------------------------------------------------------------------
@@ -340,17 +369,16 @@ local function create()
     title:SetPoint("TOPLEFT", 14, -12)
     frame.sub = W:Text(frame, "GameFontDisableSmall")
     frame.sub:SetPoint("LEFT", title, "RIGHT", 12, -1)
-    local close = CreateFrame("Button", nil, frame, "UIPanelCloseButton")
-    close:SetPoint("TOPRIGHT", 2, 2)
+    W:Close(frame)
 
     local defs = { { "hot", L["Hot"], buildHotPage }, { "recipes", L["Vendor recipes"], buildRecipePage },
         { "settings", L["Focus / Settings"], RM.Settings.Build } }
-    local x = 12
+    local prevTab
     for _, def in ipairs(defs) do
         local key = def[1]
         local b = W:Toggle(frame, def[2], 150, function() return UI.tab == key end, function() UI:ShowTab(key) end)
-        b:SetPoint("TOPLEFT", frame, "TOPLEFT", x, -38)
-        x = x + 154
+        if prevTab then b:SetPoint("LEFT", prevTab, "RIGHT", 4, 0) else b:SetPoint("TOPLEFT", frame, "TOPLEFT", 12, -38) end
+        prevTab = b
         tabs[key] = b
         local page = CreateFrame("Frame", nil, frame)
         page:SetPoint("TOPLEFT", 6, -66)

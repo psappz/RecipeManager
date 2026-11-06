@@ -51,9 +51,7 @@ end
 
 local function ensureButton()
     if button or not AuctionHouseFrame then return end
-    button = CreateFrame("Button", "RecipeManagerScanButton", AuctionHouseFrame, "UIPanelButtonTemplate")
-    button:SetSize(110, 22)
-    button:SetText("RecipeScan")
+    button = RM.W:Button(AuctionHouseFrame, "RecipeScan", 110)
     button:SetPoint("TOPRIGHT", AuctionHouseFrame, "TOPRIGHT", -30, -1)
     button:SetScript("OnClick", function() S:Start() end)
     button:SetScript("OnEnter", function(self)

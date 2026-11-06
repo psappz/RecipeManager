@@ -62,6 +62,8 @@ end
 -- Should the proximity warning include this recipe?
 function R:ShouldWarn(s)
     local set = RM.settings
+    -- a BoE recipe that one of my characters already has in bags, bank or mail is not worth a warning
+    if set.skipOwned and s.bind == "BoE" and not s.known and RM.Int and RM.Int:Owned(s.id) then return false end
     if s.limited then
         if s.bind == "BoE" then return true end
         -- BoP: only if the character could learn it (also when only the skill is missing)

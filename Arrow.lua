@@ -72,6 +72,10 @@ function A:Point(npc, point, recipes)
     if not cont then return end
     target = { npc = npc, name = v.name, cont = cont, wx = wx, wy = wy, recipes = recipes or v.recipes }
     hideAt = nil
+    if RM.settings.useTomTom and RM.Int and RM.Int:HasTomTom() and RM.Int:TomTomWaypoint(point, v.name) then
+        RM.Macro:SetVendor(v.name)
+        return
+    end
     nameText:SetText(v.name)
     RM.Macro:SetVendor(v.name)
     RM:AfterCombat("arrow", function()
