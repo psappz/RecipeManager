@@ -72,9 +72,10 @@ function S.Build(page)
     c2:SetPoint("TOPLEFT", 8, -50)
     local c3 = add(W:Check(w, L["Warning sound"], function() return set.sound end, function(v) set.sound = v end))
     c3:SetPoint("TOPLEFT", 8, -74)
-    local l1 = W:Text(w, "GameFontHighlightSmall", L["Warning distance (yards)"])
+    local l1 = W:Text(w, "GameFontHighlightSmall", L["Warning distance"])
     l1:SetPoint("TOPLEFT", 14, -106)
-    local n1 = add(W:Number(w, 60, function() return set.warnDistance end, function(v) set.warnDistance = math.max(50, math.floor(v)) end))
+    page.warnLabel = l1
+    local n1 = add(W:Number(w, 60, function() return RM:ToUnit(set.warnDistance) end, function(v) set.warnDistance = math.max(50, RM:FromUnit(v)) end))
     n1:SetPoint("LEFT", l1, "RIGHT", 10, 0)
     local l2 = W:Text(w, "GameFontHighlightSmall", L["Hot from AH price >"])
     l2:SetPoint("TOPLEFT", 14, -132)
@@ -149,6 +150,7 @@ end
 
 function S:Refresh(page)
     for _, c in ipairs(page.controls) do if c.Refresh then c:Refresh() end end
+    page.warnLabel:SetText(L["Warning distance"] .. " (" .. RM:UnitLabel() .. ")")
     local f = RM.char.focus
     page.focusText:SetText((f and next(f)) and L["Focus active: exact display with full status."]
         or L["No focus: own professions automatically, plus pre-buy and hot recipes."])

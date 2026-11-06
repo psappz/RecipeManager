@@ -180,9 +180,15 @@ local function buildRecipePage(page)
     near:SetPoint("TOPLEFT", page, "TOPLEFT", 8, -36)
     local radius = W:Number(page, 50, function() return RM.settings.nearRadius end,
         function(v) RM.settings.nearRadius = math.max(10, math.floor(v)) UI:Refresh() end)
-    radius:SetPoint("LEFT", near, "RIGHT", 140, 0)
+    radius:SetPoint("LEFT", near.text, "RIGHT", 8, 0)
     local unit = W:Cycle(page, 70, function() return { { "yd", L["yards"] }, { "m", L["meters"] } } end,
-        function() return RM.settings.unit end, function(v) RM.settings.unit = v UI:Refresh() end)
+        function() return RM.settings.unit end, function(v)
+            local yards = RM:RadiusYards(RM.settings.nearRadius)
+            RM.settings.unit = v
+            RM.settings.unitChosen = true
+            RM.settings.nearRadius = RM:ToUnit(yards)
+            UI:Refresh()
+        end)
     unit:SetPoint("LEFT", radius, "RIGHT", 6, 0)
     page.count = W:Text(page, "GameFontDisableSmall")
     page.count:SetPoint("TOPRIGHT", page, "TOPRIGHT", -10, -42)

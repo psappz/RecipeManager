@@ -18,6 +18,7 @@ local locale = GetLocale()
 local T
 
 if locale == "deDE" then T = {
+    ["Warning distance"] = "Warnabstand",
     ["Sold for"] = "Erzielt",
     ["Evidence"] = "Beleg",
     ["guild"] = "Gilde",
@@ -104,6 +105,7 @@ if locale == "deDE" then T = {
 } end
 
 if locale == "frFR" then T = {
+    ["Warning distance"] = "Distance d'alerte",
     ["Sold for"] = "Vendu",
     ["Evidence"] = "Preuve",
     ["guild"] = "guilde",
@@ -179,6 +181,7 @@ if locale == "frFR" then T = {
 } end
 
 if locale == "esES" or locale == "esMX" then T = {
+    ["Warning distance"] = "Distancia de aviso",
     ["Sold for"] = "Vendido",
     ["Evidence"] = "Prueba",
     ["guild"] = "herm.",
@@ -252,6 +255,7 @@ if locale == "esES" or locale == "esMX" then T = {
 } end
 
 if locale == "itIT" then T = {
+    ["Warning distance"] = "Distanza di avviso",
     ["Sold for"] = "Venduto",
     ["Evidence"] = "Prova",
     ["guild"] = "gilda",
@@ -325,6 +329,7 @@ if locale == "itIT" then T = {
 } end
 
 if locale == "ptBR" or locale == "ptPT" then T = {
+    ["Warning distance"] = "Distância de aviso",
     ["Sold for"] = "Vendido",
     ["Evidence"] = "Prova",
     ["guild"] = "guilda",

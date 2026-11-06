@@ -62,7 +62,7 @@ local GLOBAL_DEFAULTS = {
     priceSource = "auto",     -- auto | auctionator | auctioneer | tsm | recipescan
     nearOnly = true,
     nearRadius = 300,
-    unit = "yd",              -- yd | m
+    unit = nil,               -- yd | m; default: yards for English clients, meters for all others
     useMacro = true,
     muted = {},               -- [npcID] = true
     minimap = { hide = false },
@@ -112,6 +112,16 @@ function RM:InitDB()
 
     self.db = db
     self.settings = db.settings
+    -- distance unit follows the client language until the player picks one
+    if not self.settings.unitChosen then
+        local loc = GetLocale()
+        local want = (loc == "enUS" or loc == "enGB") and "yd" or "m"
+        if self.settings.unit ~= want then
+            if self.settings.unit == "yd" and want == "m" then self.settings.nearRadius = math.floor((self.settings.nearRadius or 300) * 0.9144 + 0.5) end
+            if self.settings.unit == "m" and want == "yd" then self.settings.nearRadius = math.floor((self.settings.nearRadius or 300) / 0.9144 + 0.5) end
+            self.settings.unit = want
+        end
+    end
     self.realm = r
     self.char = c
     self.realmName = realm
@@ -148,6 +158,11 @@ function RM:FormatDistance(yards)
     end
     return string.format("%d yd", math.floor(yards + 0.5))
 end
+
+-- the warning distance is stored in yards; shown in the chosen unit
+function RM:ToUnit(yards) return (self.settings.unit == "m") and math.floor(yards * 0.9144 + 0.5) or math.floor(yards + 0.5) end
+function RM:FromUnit(v) return (self.settings.unit == "m") and math.floor(v / 0.9144 + 0.5) or math.floor(v + 0.5) end
+function RM:UnitLabel() return (self.settings.unit == "m") and ns.L["meters"] or ns.L["yards"] end
 
 -- radius setting is stored in the chosen unit; convert to yards
 function RM:RadiusYards(value)
