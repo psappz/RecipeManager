@@ -398,6 +398,8 @@ local function create()
     end
     frame.footer = W:Text(frame, "GameFontDisableSmall")
     frame.footer:SetPoint("BOTTOMLEFT", 14, 8)
+    frame.version = W:Text(frame, "GameFontDisableSmall", "v" .. RM.version)
+    frame.version:SetPoint("BOTTOMRIGHT", -14, 8)
     frame:SetScript("OnShow", function() UI:Refresh() end)
 end
 
