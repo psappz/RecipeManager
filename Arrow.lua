@@ -124,7 +124,7 @@ function A:ShowTooltip(owner)
     for _, id in ipairs(target.recipes or {}) do
         local s = RM.Rules:Status(id, target.npc)
         if s and RM.Rules:ShouldWarn(s) then
-            local name = C_Item.GetItemNameByID(id) or ("item " .. id)
+            local name = (RM.UI.ItemName(id))
             local tag = s.limited and ("|cffff6a3d" .. L["LIMITED"] .. "|r ") or ""
             GameTooltip:AddDoubleLine(tag .. name, s.color .. s.text .. "|r")
             local right = s.ahPrice and (L["AH recipe"] .. " " .. RM:Money(s.ahPrice)) or L["no price"]

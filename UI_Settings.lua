@@ -77,6 +77,13 @@ function S.Build(page)
     page.warnLabel = l1
     local n1 = add(W:Number(w, 60, function() return RM:ToUnit(set.warnDistance) end, function(v) set.warnDistance = math.max(50, RM:FromUnit(v)) end))
     n1:SetPoint("LEFT", l1, "RIGHT", 10, 0)
+    local lm = W:Text(w, "GameFontHighlightSmall", L["Hot only from a margin of"])
+    lm:SetPoint("LEFT", n1, "RIGHT", 24, 0)
+    local nm = add(W:Number(w, 50, function() return (set.hotMinMargin or 0) / 100 end,
+        function(v) set.hotMinMargin = math.max(0, math.floor(v * 100 + 0.5)) RM:Fire("PRICES_CHANGED") end))
+    nm:SetPoint("LEFT", lm, "RIGHT", 10, 0)
+    local lms = W:Text(w, "GameFontHighlightSmall", L["silver"])
+    lms:SetPoint("LEFT", nm, "RIGHT", 4, 0)
     local l2 = W:Text(w, "GameFontHighlightSmall", L["Hot from AH price >"])
     l2:SetPoint("TOPLEFT", 14, -132)
     local n2 = add(W:Number(w, 40, function() return set.hotFactor end, function(v) set.hotFactor = math.max(1, v) end))

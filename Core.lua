@@ -58,6 +58,7 @@ local GLOBAL_DEFAULTS = {
     warnProfessions = true,   -- warn for recipes of the focus / own professions
     sound = true,
     hotFactor = 2.0,          -- AH price of the recipe > hotFactor x vendor price
+    hotMinMargin = 5000,      -- hot / very lucrative only with at least this net margin (copper), default 50 silver
     luxFactor = 4.0,          -- "very lucrative": AH price >= luxFactor x vendor price
     priceSource = "auto",     -- auto | auctionator | auctioneer | tsm | recipescan
     nearOnly = true,

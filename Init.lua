@@ -23,7 +23,7 @@ local function setupMinimap()
     local obj = LDB:NewDataObject(ADDON, {
         type = "launcher",
         text = "RecipeManager",
-        icon = "Interface\\Icons\\INV_Scroll_03",
+        icon = "Interface\\AddOns\\RecipeManager\\Media\\RecipeManager",
         OnClick = function(_, button)
             if button == "RightButton" then
                 RM.UI:Toggle("settings")

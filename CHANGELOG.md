@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.3.4
+
+### New
+- **Minimum margin for hot recipes:** a recipe only counts as hot (and very lucrative) if the AH price after fees is at least this much above the vendor price. Default 50 silver, adjustable in the settings next to the warning distance.
+
+### Fixed
+- **Recipes without a name** ("item 12239") in the Hot and Vendor recipes tabs, the arrow tooltip and the Limited Supply warning: until the game client knows an item, the name comes from QuestieDB, and missing names are requested again a few times.
+- **Minimap icon:** RecipeManager has its own icon in the style of the Manager family. The previous Blizzard icon does not exist in the Forever client.
+
 ## 1.3.3
 
 ### New

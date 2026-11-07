@@ -124,8 +124,9 @@ function P:Evaluate(id, npc)
         r.margin = r.ah - r.vendor
         local hotT = RM.settings.hotFactor * r.vendor
         local luxT = RM.settings.luxFactor * r.vendor
-        r.hot = r.ah > hotT and confirmed(id, hotT / AH_CUT)
-        r.lux = r.ah >= luxT and confirmed(id, luxT / AH_CUT)
+        local enough = r.margin >= (RM.settings.hotMinMargin or 0)
+        r.hot = enough and r.ah > hotT and confirmed(id, hotT / AH_CUT)
+        r.lux = enough and r.ah >= luxT and confirmed(id, luxT / AH_CUT)
     elseif r.ah and not r.vendor then
         r.margin = r.ah -- quest / drop recipes: full value
     end

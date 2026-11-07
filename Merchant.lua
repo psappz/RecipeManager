@@ -89,7 +89,7 @@ function M:Alarm(npc, ids)
         local s = RM.Rules:Status(id, npc)
         if s and RM.Rules:ShouldWarn(s) and not alarmed[key] then
             alarmed[key] = time()
-            local name = C_Item.GetItemNameByID(id) or ("item " .. id)
+            local name = (RM.UI.ItemName(id))
             local text = string.format(L["BUY NOW - Limited Supply: %s"], name)
             RaidNotice_AddMessage(RaidWarningFrame, text, ChatTypeInfo["RAID_WARNING"])
             RM:Print(text)

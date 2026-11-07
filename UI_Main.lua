@@ -14,9 +14,33 @@ local frame, tabs, pages = nil, {}, {}
 ---------------------------------------------------------------------------
 -- shared helpers
 ---------------------------------------------------------------------------
+-- Missing item names: the client answers item requests in batches and drops some under load,
+-- so ask again a few times while names are missing. Meanwhile the name comes from QuestieDB.
+local retries, retryPending = 0, false
+local function retryMissing()
+    if retryPending or retries >= 6 then return end
+    retryPending = true
+    C_Timer.After(3, function()
+        retryPending = false
+        retries = retries + 1
+        UI:RefreshSoon()
+    end)
+end
+RM:On("GET_ITEM_INFO_RECEIVED", function() retries = 0 end)
+
+local function questieName(id)
+    if type(ItemDB) ~= "table" or type(ItemDB.name) ~= "function" then return nil end
+    local ok, n = pcall(ItemDB.name, id)
+    if ok and type(n) == "string" and n ~= "" then return n end
+end
+
 local function itemName(id)
     local name = C_Item.GetItemNameByID(id)
-    if not name then C_Item.RequestLoadItemDataByID(id) return "item " .. id, "|cffffffff" end
+    if not name then
+        C_Item.RequestLoadItemDataByID(id)
+        retryMissing()
+        return questieName(id) or ("item " .. id), "|cffffffff"
+    end
     local q = C_Item.GetItemQualityByID(id)
     local c = q and ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[q]
     return name, (c and c.hex) or "|cffffffff"

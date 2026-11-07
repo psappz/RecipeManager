@@ -63,7 +63,7 @@ The **RecipeManager macro** is a single macro that RecipeManager rewrites for th
 ### Hot
 All vendor recipes for gold, sorted by what reselling the **recipe itself** earns: vendor price, Auction House price after the 5 % cut, margin and age of the price. Filter by profession, *only hot*, *only Limited Supply* or *only learned in Forever*.
 
-- **Hot** – the recipe sells for more than **2×** its vendor price (configurable), confirmed in at least two price snapshots, so a single overpriced listing does not count.
+- **Hot** – the recipe sells for more than **2×** its vendor price (configurable), confirmed in at least two price snapshots, so a single overpriced listing does not count, and only with a margin of at least **50 silver** (configurable).
 - **Gold coin** – *very lucrative*: at least **4×** the vendor price (configurable).
 
 ### Vendor recipes
@@ -80,7 +80,7 @@ RecipeManager values the **recipe**. The crafted item's price is shown for infor
 ### Focus / Settings
 - **Focus professions:** pick any primary or secondary profession – also ones your character does not have. Without a focus, RecipeManager uses your own professions automatically.
 - **Warnings:** professions or Limited Supply only, warning distance, sound.
-- **Prices:** hot and very lucrative thresholds, choice of Auction House addon.
+- **Prices:** hot and very lucrative thresholds, minimum margin for hot, choice of Auction House addon.
 - **Twinks:** your other characters on the same realm and faction with their professions. Tick a twink and BoE recipes for its professions count for you too (you can mail them).
 
 ---
