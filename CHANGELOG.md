@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.5
+
+### New
+- **Data collector:** trainer windows (all entries, including ones you cannot learn yet: cost, skill and level requirement) and profession windows (skill-up colour at your skill, reagents) are recorded locally. RecipeManager reports in chat when a trainer is new or its offer has changed. `/rm data` shows what has been collected. This data verifies the base data for the upcoming skill planner.
+
 ## 1.3.4
 
 ### New
