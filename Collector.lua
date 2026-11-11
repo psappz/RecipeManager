@@ -85,7 +85,11 @@ function C:ScanTrainer()
     local header
     local n = call(GetNumTrainerServices) or 0
     for i = 1, n do
-        local name, sub, kind = call(GetTrainerServiceInfo, i)
+        -- Classic: name, subText, type, ...  Forever: name, type, icon, ...
+        local name, a, b = call(GetTrainerServiceInfo, i)
+        local sub, kind
+        if a == "available" or a == "unavailable" or a == "used" or a == "header" then kind = a
+        else sub, kind = a, b end
         if kind == "header" then
             header = name
         elseif name then
@@ -117,7 +121,7 @@ function C:ScanTrainer()
     local c = store()
     local t = c.trainers[id]
     local added, changed = 0, 0
-    if t then
+    if t and t.keyFormat == 2 then
         for k, s in pairs(services) do
             local old = t.services[k]
             if not old then added = added + 1
@@ -131,7 +135,7 @@ function C:ScanTrainer()
     local _, _, _, map, x, y = RM:PlayerWorldPos()
     c.trainers[id] = {
         name = UnitName("npc"), zone = GetZoneText(), map = map, x = x, y = y, faction = RM.faction,
-        seen = time(), count = n, services = services, prof = nil,
+        seen = time(), count = n, services = services, keyFormat = 2,
         greeting = call(GetTrainerGreetingText),
     }
     c.trainers[id].prof = self:TrainerProfession(c.trainers[id])
@@ -304,7 +308,8 @@ function C:Summary()
         for _ in pairs(e.obs or {}) do colours = colours + 1 end
     end
     RM:Print(string.format(L["Collected: %d trainers (%d entries), %d recipes, %d skill-up colours."], trainers, services, crafts, colours))
-    self:ZoneReport()
+    local ok, err = pcall(self.ZoneReport, self)
+    if not ok then RM:Print("ZoneReport:", tostring(err)) end
 end
 
 -- debounce: windows fire several update events in a row

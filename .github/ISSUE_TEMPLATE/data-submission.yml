@@ -1,0 +1,33 @@
+name: Data submission / Daten einsenden
+description: Share the game data RecipeManager collected (trainers, recipes, skill-up colours). / Teile die von RecipeManager gesammelten Spieldaten.
+title: "[Data] "
+labels: ["data"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Thank you for helping!** RecipeManager compares this data with its base data so the skill planner matches WoW Forever exactly.
+
+        1. In game: open RecipeManager settings and click **Share data** (or type `/rm share`).
+        2. Click into the text box, press **Ctrl+A**, then **Ctrl+C** (Mac: **Cmd+A**, **Cmd+C**).
+        3. Paste it below with **Ctrl+V** / **Cmd+V** and click **Submit new issue**.
+
+        The text contains game data only (trainer offers, recipes, skill-up colours, reagents, client language, addon version) – no character, guild or realm names.
+
+        ---
+        **Danke fürs Mithelfen!** Im Spiel die Einstellungen von RecipeManager öffnen und **Daten teilen** klicken (oder `/rm share`), im Textfeld **Strg+A** und **Strg+C** (Mac: **Cmd+A**, **Cmd+C**), hier unten einfügen und **Submit new issue** klicken. Der Text enthält nur Spieldaten, keine Namen von Charakteren, Gilden oder Realms.
+  - type: textarea
+    id: data
+    attributes:
+      label: Data / Daten
+      description: Paste the text from "Share data" here. / Text aus „Daten teilen“ hier einfügen.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes (optional) / Anmerkungen (optional)
+      description: Anything that looked wrong in game? / Ist dir im Spiel etwas aufgefallen?
+    validations:
+      required: false
