@@ -312,6 +312,165 @@ function C:Summary()
     if not ok then RM:Print("ZoneReport:", tostring(err)) end
 end
 
+---------------------------------------------------------------------------
+-- Share data: plain text for a GitHub issue (no character, guild or realm names)
+---------------------------------------------------------------------------
+C.ISSUE_URL = "https://github.com/psappz/RecipeManager/issues/new?template=data-submission.yml"
+local MAX_PART = 60000 -- GitHub issue bodies hold 65536 characters
+
+local function clean(v)
+    if v == nil then return "" end
+    return (tostring(v):gsub("[|;\n\r]", " "))
+end
+
+function C:ShareText()
+    local c = store()
+    local lines = { "RMDATA;" .. C.FORMAT .. ";" .. clean(c.locale) .. ";" .. clean(c.client) .. ";" .. clean(c.addon) }
+    local npcs = {}
+    for id in pairs(c.trainers) do table.insert(npcs, id) end
+    table.sort(npcs)
+    for _, id in ipairs(npcs) do
+        local t = c.trainers[id]
+        table.insert(lines, table.concat({ "T", id, clean(t.name), clean(t.zone), clean(t.map),
+            t.x and string.format("%.4f", t.x) or "", t.y and string.format("%.4f", t.y) or "", clean(t.faction), clean(t.prof) }, ";"))
+        local keys = {}
+        for k in pairs(t.services) do table.insert(keys, k) end
+        table.sort(keys)
+        for _, k in ipairs(keys) do
+            local v = t.services[k]
+            table.insert(lines, table.concat({ "S", id, clean(v.name), clean(v.kind), clean(v.cost), clean(v.skill), clean(v.skillLevel),
+                clean(v.level), clean(v.item), clean(v.spell) }, ";"))
+        end
+    end
+    local keys = {}
+    for k in pairs(c.crafts) do table.insert(keys, k) end
+    table.sort(keys)
+    for _, k in ipairs(keys) do
+        local e = c.crafts[k]
+        local rea, obs = {}, {}
+        for rid, n in pairs(e.rea or {}) do table.insert(rea, rid .. ":" .. n) end
+        for rank, d in pairs(e.obs or {}) do table.insert(obs, rank .. ":" .. clean(d)) end
+        table.sort(rea) table.sort(obs)
+        table.insert(lines, table.concat({ "C", clean(k), clean(e.name), clean(e.line), clean(e.lineName), clean(e.out), clean(e.qty),
+            table.concat(rea, ","), table.concat(obs, ","), e.learned and 1 or 0 }, ";"))
+    end
+    -- split into parts that fit one GitHub issue each
+    local parts, cur, size = {}, {}, 0
+    for _, l in ipairs(lines) do
+        if size + #l + 1 > MAX_PART and #cur > 0 then
+            table.insert(parts, cur) cur, size = { lines[1] }, #lines[1] + 1
+        end
+        table.insert(cur, l) size = size + #l + 1
+    end
+    if #cur > 0 then table.insert(parts, cur) end
+    for i, p in ipairs(parts) do parts[i] = "RMPART;" .. i .. "/" .. #parts .. "\n" .. table.concat(p, "\n") end
+    return parts, #lines - 1
+end
+
+local function readOnly(edit, getText)
+    edit:SetScript("OnTextChanged", function(self, user) if user then self:SetText(getText()) self:HighlightText() end end)
+    edit:SetScript("OnEditFocusGained", function(self) self:HighlightText() end)
+end
+
+function C:ShowShare()
+    local W = RM.W
+    local f = self.shareFrame
+    if not f then
+        f = W:Panel(UIParent, 0.09, 0.075, 0.05, 0.98)
+        f:SetBackdropBorderColor(0.78, 0.63, 0.29, 1)
+        f:SetSize(640, 470)
+        f:SetPoint("CENTER")
+        f:SetFrameStrata("DIALOG")
+        f:EnableMouse(true)
+        f:SetMovable(true)
+        f:RegisterForDrag("LeftButton")
+        f:SetScript("OnDragStart", f.StartMoving)
+        f:SetScript("OnDragStop", f.StopMovingOrSizing)
+        tinsert(UISpecialFrames, "RecipeManagerShareFrame")
+        _G.RecipeManagerShareFrame = f
+        W:Close(f)
+        local title = W:Text(f, "GameFontNormalLarge", L["Share data"])
+        title:SetPoint("TOPLEFT", 14, -12)
+        local intro = W:Text(f, "GameFontHighlightSmall", L["SHARE_INTRO"])
+        intro:SetPoint("TOPLEFT", 14, -38)
+        intro:SetWidth(610)
+        intro:SetJustifyH("LEFT")
+        local steps = W:Text(f, "GameFontHighlightSmall", L["SHARE_STEPS"])
+        steps:SetPoint("TOPLEFT", intro, "BOTTOMLEFT", 0, -10)
+        steps:SetWidth(610)
+        steps:SetJustifyH("LEFT")
+        steps:SetSpacing(3)
+        -- link box (copyable)
+        local link = CreateFrame("EditBox", nil, f, "BackdropTemplate")
+        link:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
+        link:SetBackdropColor(0.04, 0.035, 0.02, 1)
+        link:SetBackdropBorderColor(0.4, 0.33, 0.2, 1)
+        link:SetFontObject(GameFontHighlightSmall)
+        link:SetTextInsets(6, 6, 0, 0)
+        link:SetSize(610, 22)
+        link:SetPoint("TOPLEFT", steps, "BOTTOMLEFT", 0, -8)
+        link:SetAutoFocus(false)
+        link:SetText(C.ISSUE_URL)
+        readOnly(link, function() return C.ISSUE_URL end)
+        link:SetScript("OnEscapePressed", function() f:Hide() end)
+        f.link = link
+        -- part buttons + data box
+        f.partLabel = W:Text(f, "GameFontNormalSmall")
+        f.partLabel:SetPoint("TOPLEFT", link, "BOTTOMLEFT", 0, -10)
+        f.partButtons = {}
+        local sf = CreateFrame("ScrollFrame", nil, f)
+        sf:SetPoint("TOPLEFT", link, "BOTTOMLEFT", 0, -32)
+        sf:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -14, 40)
+        sf:EnableMouseWheel(true)
+        sf:SetScript("OnMouseWheel", function(self, delta)
+            local max = self:GetVerticalScrollRange()
+            self:SetVerticalScroll(math.max(0, math.min(max, self:GetVerticalScroll() - delta * 40)))
+        end)
+        local bg = W:Panel(f, 0.04, 0.035, 0.02, 1)
+        bg:SetPoint("TOPLEFT", sf, "TOPLEFT", -4, 4)
+        bg:SetPoint("BOTTOMRIGHT", sf, "BOTTOMRIGHT", 4, -4)
+        bg:SetFrameLevel(f:GetFrameLevel())
+        local eb = CreateFrame("EditBox", nil, sf)
+        eb:SetMultiLine(true)
+        eb:SetFontObject(GameFontHighlightSmall)
+        eb:SetWidth(600)
+        eb:SetMaxLetters(0)
+        eb:SetAutoFocus(false)
+        eb:SetScript("OnEscapePressed", function() f:Hide() end)
+        readOnly(eb, function() return f.current or "" end)
+        sf:SetScrollChild(eb)
+        f.edit = eb
+        f.foot = W:Text(f, "GameFontDisableSmall", L["SHARE_PRIVACY"])
+        f.foot:SetPoint("BOTTOMLEFT", 14, 14)
+        f.foot:SetWidth(610)
+        f.foot:SetJustifyH("LEFT")
+        self.shareFrame = f
+    end
+    local parts, n = self:ShareText()
+    f.parts = parts
+    local function show(i)
+        f.current = parts[i]
+        f.edit:SetText(parts[i])
+        f.edit:SetFocus()
+        f.edit:HighlightText()
+        for j, b in ipairs(f.partButtons) do
+            if b.Refresh then b:Refresh() end
+            b:SetShown(j <= #parts and #parts > 1)
+        end
+        f.partLabel:SetText(#parts > 1 and string.format(L["Part %d of %d - one issue per part"], i, #parts) or string.format(L["%d records"], n))
+        f.sel = i
+    end
+    for i = 1, #parts do
+        if not f.partButtons[i] then
+            local b = RM.W:Toggle(f, tostring(i), 28, function() return f.sel == i end, function() show(i) end)
+            b:SetPoint("LEFT", f.partLabel, "RIGHT", 8 + (i - 1) * 32, 0)
+            f.partButtons[i] = b
+        end
+    end
+    f:Show()
+    show(1)
+end
+
 -- debounce: windows fire several update events in a row
 local pending = {}
 local function soon(what, fn)

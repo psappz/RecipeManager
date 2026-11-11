@@ -132,6 +132,8 @@ function S.Build(page)
     page.twinkHeader:SetPoint("TOPLEFT", 10, -8)
     page.unmute = W:Button(t, L["Unmute all vendors"], 160, function() wipe(RM.settings.muted) RM.UI:Refresh() end)
     page.unmute:SetPoint("TOPRIGHT", -10, -4)
+    page.share = W:Button(t, L["Share data"], 120, function() RM.Collector:ShowShare() end)
+    page.share:SetPoint("RIGHT", page.unmute, "LEFT", -6, 0)
     page.twinkRows = {}
     for r = 1, 8 do
         local row = CreateFrame("Frame", nil, t)

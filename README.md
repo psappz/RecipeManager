@@ -10,7 +10,8 @@ Recipe vendor companion for **WoW Forever**. RecipeManager warns you when you ge
 - **Limited Supply**: warning near the vendor and a loud "BUY NOW" with sound and a highlight in the merchant window when the recipe is in stock. BoE recipes always, BoP recipes when the character can learn them (also when only the skill is missing).
 - **Arrow** to the vendor: click targets the vendor, Ctrl+drag moves the arrow, dragging it onto an action bar places the **RecipeManager macro** (one macro that is rewritten for the current vendor). The tooltip shows the recipe details.
 - **Hot** tab: resale of vendor recipes – vendor price, AH price (after the 5 % cut), margin, scan age. Hot = AH price > 2× vendor price (confirmed in at least two snapshots, margin at least 50 silver, configurable), gold coin = very lucrative (≥ 4× vendor price, configurable).
-- **Vendor recipes** tab: filter by profession and rank, "only vendors within 300 yd/m"; without the radius filter also quest and drop recipes. Columns for AH price of the recipe, margin, AH price of the product and crafting profit (where reagents are known).
+- **Recipes** tab: full-text search (recipe, product, reagent, vendor, zone), filter menu (profession, rank, source, status, distance) with chips, saved searches, watchlist with in-stock notice, and a detail panel with reagents, all sources and which of your characters can learn the recipe.
+- **Data collector**: trainers and profession windows are recorded; `/rm share` sends them to the project via a GitHub form.
 - **Focus / Settings**: focus professions (incl. secondary professions), warning options, price source, twinks of the same realm and faction (count for BoE recipes), muted vendors.
 - **Prices** from Auctionator, Auctioneer (Forever) or TradeSkillMaster. Without any of them: **RecipeScan**, an own scan of the Recipe category only (button in the auction house, only when chosen in the settings).
 

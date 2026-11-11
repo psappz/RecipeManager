@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.4.0
+
+### New
+- **Recipes tab** (was "Vendor recipes"):
+  - **Search** across recipe, crafted item, reagents, vendor and zone; matches are highlighted or named next to the recipe.
+  - **Filter menu**: profession (with "My characters"), rank, source (vendor, quest, drop), status (not learned, Limited Supply, hot, watchlist) and the distance filter.
+  - **Active filters as chips**, click to remove, "reset all".
+  - **Saved searches**: store search text and filters, apply with one click, right-click deletes.
+  - **Watchlist**: star per recipe; a notice appears when a watched Limited Supply recipe was seen in stock (by you or your guild).
+  - **Detail panel**: reagents with price (vendor or AH, cheaper one) and owned count, material cost, crafting profit; all vendors with distance or "other faction", Limited Supply restock; AH price, margin, sales; which of your characters know the recipe, can learn it or need how many more points.
+  - New column: profession.
+- **Share data** (settings or `/rm share`): copyable text with what the collector recorded, a step-by-step guide and the link to the GitHub form. Split into parts if too long for one issue.
+- Reagents of not-yet-learned recipes come from the collector once you open the profession window.
+
 ## 1.3.5
 
 ### New

@@ -73,9 +73,10 @@ SlashCmdList.RECIPEMANAGER = function(msg)
     elseif msg == "settings" or msg == "config" then RM.UI:Toggle("settings")
     elseif msg == "export" then RM:Export()
     elseif msg == "data" then RM.Collector:Summary()
+    elseif msg == "share" then RM.Collector:ShowShare()
     elseif msg == "macro" then RM.Macro:Pickup()
     else
-        RM:Print("/rm, /rm arrow, /rm hide, /rm settings, /rm macro, /rm export, /rm data")
+        RM:Print("/rm, /rm arrow, /rm hide, /rm settings, /rm macro, /rm export, /rm data, /rm share")
     end
 end
 

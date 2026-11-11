@@ -169,6 +169,76 @@ function W:Number(parent, width, get, set)
     return e
 end
 
+-- Single-line text input with a grey placeholder; onChange(text) after each change
+function W:Edit(parent, width, placeholder, onChange)
+    local e = CreateFrame("EditBox", nil, parent, "BackdropTemplate")
+    e:SetBackdrop(BACKDROP)
+    e:SetBackdropColor(0.04, 0.035, 0.02, 1)
+    e:SetBackdropBorderColor(0.54, 0.45, 0.28, 1)
+    e:SetFontObject(GameFontHighlightSmall)
+    e:SetTextInsets(8, 24, 0, 0)
+    e:SetSize(width or 200, 24)
+    e:SetAutoFocus(false)
+    e.ph = W:Text(e, "GameFontDisableSmall", placeholder)
+    e.ph:SetPoint("LEFT", 8, 0)
+    e.clear = W:Button(e, "x", 18, function() e:SetText("") e:ClearFocus() end)
+    e.clear:SetSize(18, 18)
+    e.clear:SetPoint("RIGHT", -3, 0)
+    local function update(self)
+        local t = self:GetText() or ""
+        self.ph:SetShown(t == "" and not self:HasFocus())
+        self.clear:SetShown(t ~= "")
+    end
+    e:SetScript("OnTextChanged", function(self, user) update(self) if onChange then onChange(self:GetText() or "") end end)
+    e:SetScript("OnEditFocusGained", function(self) self:SetBackdropBorderColor(0.78, 0.63, 0.29, 1) update(self) end)
+    e:SetScript("OnEditFocusLost", function(self) self:SetBackdropBorderColor(0.54, 0.45, 0.28, 1) update(self) end)
+    e:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
+    e:SetScript("OnEnterPressed", function(self) self:ClearFocus() end)
+    update(e)
+    return e
+end
+
+-- Row of small removable chips: chips:Set({ { label, onRemove, onClick? }, ... })
+function W:Chips(parent, height)
+    local row = CreateFrame("Frame", nil, parent)
+    row:SetHeight(height or 20)
+    row.pool = {}
+    function row:Set(list, maxWidth)
+        local x = 0
+        for i, item in ipairs(list) do
+            local b = self.pool[i]
+            if not b then
+                b = W:Button(self, "", 20)
+                b:SetHeight((height or 20) - 2)
+                b:HookScript("OnEnter", function(btn)
+                    if btn.tip then
+                        GameTooltip:SetOwner(btn, "ANCHOR_TOP")
+                        GameTooltip:AddLine(btn.tip, 1, 1, 1, true)
+                        GameTooltip:Show()
+                    end
+                end)
+                b:HookScript("OnLeave", function() GameTooltip:Hide() end)
+                self.pool[i] = b
+            end
+            b:SetText(item[1] .. ((item[2] and not item[3]) and "  |cffffd100x|r" or ""))
+            b.tip = item[4]
+            b:SetScript("OnClick", function(_, button)
+                if item[3] and button ~= "RightButton" and not IsShiftKeyDown() then item[3]()
+                elseif item[2] then item[2]() end
+            end)
+            b:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+            b:ClearAllPoints()
+            b:SetPoint("LEFT", self, "LEFT", x, 0)
+            x = x + b:GetWidth() + 4
+            b:SetShown(not maxWidth or x <= maxWidth)
+        end
+        for i = #list + 1, #self.pool do self.pool[i]:Hide() end
+        self.used = x
+        return x
+    end
+    return row
+end
+
 -- Button that cycles through a list of { value, label }
 function W:Cycle(parent, width, options, get, set)
     local b = W:Button(parent, "", width)
@@ -289,7 +359,16 @@ function W:Table(parent, columns, rowHeight, visibleRows, onClick)
         r.icon:Hide()
         r:RegisterForClicks("LeftButtonUp", "RightButtonUp")
         r:SetScript("OnClick", function(self, button)
-            if self.item and onClick then onClick(self.item, button) end
+            if not self.item then return end
+            -- a column with its own click handler (c[6]) takes the click when the cursor is over it
+            local scale = self:GetEffectiveScale()
+            local cx = (GetCursorPosition() / scale) - (self:GetLeft() or 0)
+            local x0 = 6
+            for _, c in ipairs(columns) do
+                if c[6] and cx >= x0 - 6 and cx < x0 + c[3] - 6 then c[6](self.item, button) return end
+                x0 = x0 + c[3]
+            end
+            if onClick then onClick(self.item, button) end
         end)
         r:SetScript("OnEnter", function(self)
             if self.item and self.item.itemID then

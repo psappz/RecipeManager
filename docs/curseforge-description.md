@@ -66,14 +66,16 @@ All vendor recipes for gold, sorted by what reselling the **recipe itself** earn
 - **Hot** – the recipe sells for more than **2×** its vendor price (configurable), confirmed in at least two price snapshots, so a single overpriced listing does not count, and only with a margin of at least **50 silver** (configurable).
 - **Gold coin** – *very lucrative*: at least **4×** the vendor price (configurable).
 
-### Vendor recipes
-Look up any recipe: filter by profession and rank (Apprentice 1–75, Journeyman 75–150, Expert 150–225, Artisan 225–300).
+### Recipes
+Look up any recipe – vendor, quest or drop.
 
-- **Only vendors within …** (on by default, 300 yards or meters) shows what you can buy right around you.
-- Untick it to see **all** recipes, including quest rewards and drops.
-- Columns: recipe (in its quality colour), skill, source / vendor, distance, vendor price, AH price of the recipe, margin, AH price of the crafted item and crafting profit.
-- Limited Supply recipes are highlighted.
-- Click a recipe for details, the arrow and the option to mute the vendor.
+- **Search** across recipe, crafted item, reagents, vendor and zone. Matches in the name are highlighted, other matches are named next to the recipe ("reagent: Crocolisk Meat").
+- **Filter menu**: profession ("My characters" picks the professions of all your characters), rank, source (vendor, quest, drop), status (not learned, Limited Supply, hot, watchlist) and "only vendors within …" (300 yards or meters).
+- Active filters show as **chips** – click one to remove it, or reset all at once.
+- **Saved searches**: store any combination of search text and filters and apply it with one click (right-click deletes).
+- **Watchlist**: click the star. When a watched Limited Supply recipe was seen in stock (by you or your guild), a notice appears at the top.
+- Columns: watchlist, recipe, skill, profession, source / vendor, distance, vendor price, AH price of the recipe, margin, AH price of the crafted item and crafting profit. Every column can be sorted.
+- **Details** for the selected recipe: reagents with price (vendor or AH, whichever is cheaper) and how many you own, material cost and crafting profit; all vendors with distance (or "other faction"), Limited Supply restock and last time seen in stock, AH price, margin and sales; which of your characters know the recipe, can learn it or need how many more points.
 
 RecipeManager values the **recipe**. The crafted item's price is shown for information; for serious crafting analysis use TSM, CraftProfit and friends.
 
@@ -104,6 +106,8 @@ On a fresh server, prices take a few scans to appear. Until then the window show
 - **QuestieDB** provides recipes, vendors, positions, quest rewards and drops. RecipeManager reads it once at login.
 - **Limited Supply** information, restock times and base vendor prices come from the CMaNGOS classic database.
 - **Forever-only recipes** and changed vendors are **learned in game**: every vendor visit updates stock, prices and Limited Supply. `/rm export` creates a text with what your client has learned – please send it in so everyone benefits.
+- **Trainers and profession windows** are recorded too (costs, skill and level requirements, skill-up colours, reagents). `/rm data` shows what was recorded in your zone and which trainers are still missing.
+- **Share data** (settings, or `/rm share`): copy the text into the [data submission form](https://github.com/psappz/RecipeManager/issues/new?template=data-submission.yml) on GitHub. The window explains every step. Game data only – no character, guild or realm names.
 
 ---
 
@@ -117,8 +121,30 @@ On a fresh server, prices take a few scans to appear. Until then the window show
 | `/rm settings` | Open the settings |
 | `/rm macro` | Put the RecipeManager macro on the cursor |
 | `/rm export` | Export learned vendor data |
+| `/rm data` | What the collector recorded; trainers still missing in your zone |
+| `/rm share` | Share collected data via GitHub |
 
 Minimap button: **click** = arrow to the nearest vendor, **Shift-click** = window, **right-click** = settings. The yellow dot means a relevant vendor in your current zone.
+
+---
+
+## Roadmap
+
+### 1.5 – Skill planner
+- Pick a character and profession, choose the next milestone (new recipe or rank)
+- Cheapest or fastest path with expected crafts for yellow and green recipes
+- Rank-ups as their own steps (Journeyman, Expert, Artisan) with level requirement
+- Shopping list that subtracts what your characters already own (Syndicator)
+- Vendor reagents when cheaper than the AH, product sales counted against the cost
+- Trainer recipes in the recipe list
+- Matched to WoW Forever with data shared by players
+
+### 1.6 – Routes, gathering and synergies
+- Route and checklist: every vendor, trainer and AH stop in order, with the arrow
+- Plan for any of your characters; BoE recipes bought by one and mailed to another
+- Mining: smelt bought ore or mine, with skill ranges for every ore
+- Herbalism and skinning plans by node and zone
+- Synergies between your characters: Mining → Blacksmithing / Engineering, Herbalism → Alchemy and First Aid potions (Forever), Skinning → Leatherworking, crafted items → Enchanting
 
 ---
 
