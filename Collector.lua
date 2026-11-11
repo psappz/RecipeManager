@@ -107,7 +107,12 @@ function C:ScanTrainer()
     end
     scanning = false
     C.lastOwn = GetTime()
-    if n == 0 then return end
+    if n == 0 then
+        C.retries = (C.retries or 0) + 1
+        if C.retries <= 3 then C_Timer.After(1, function() C:ScanTrainer() end) end
+        return
+    end
+    C.retries = 0
 
     local c = store()
     local t = c.trainers[id]
@@ -126,9 +131,10 @@ function C:ScanTrainer()
     local _, _, _, map, x, y = RM:PlayerWorldPos()
     c.trainers[id] = {
         name = UnitName("npc"), zone = GetZoneText(), map = map, x = x, y = y, faction = RM.faction,
-        seen = time(), count = n, services = services,
+        seen = time(), count = n, services = services, prof = nil,
         greeting = call(GetTrainerGreetingText),
     }
+    c.trainers[id].prof = self:TrainerProfession(c.trainers[id])
     local count = 0
     for _ in pairs(services) do count = count + 1 end
     if not t then
@@ -242,6 +248,50 @@ function C:ScanCraft()
     RM:Fire("COLLECT_CHANGED")
 end
 
+-- profession of a trainer: the skill most of its entries require, or an entry named like a profession
+local PROFS = { 171, 164, 333, 202, 165, 197, 182, 186, 393, 185, 129, 356 }
+local function profNames()
+    local m = {}
+    for _, id in ipairs(PROFS) do m[L["PROF_" .. id]] = id end
+    return m
+end
+
+function C:TrainerProfession(t)
+    local names, count = profNames(), {}
+    for _, s in pairs(t.services or {}) do
+        local id = (s.skill and names[s.skill]) or names[s.name]
+        if id then count[id] = (count[id] or 0) + 1 end
+    end
+    local best, n = nil, 0
+    for id, c in pairs(count) do if c > n then best, n = id, c end end
+    return best
+end
+
+local function maxSkill(t)
+    local m = 0
+    for _, s in pairs(t.services or {}) do if s.skillLevel and s.skillLevel > m then m = s.skillLevel end end
+    return m
+end
+
+function C:ZoneReport(zone)
+    local c = store()
+    zone = zone or GetZoneText()
+    local found, list = {}, {}
+    for _, t in pairs(c.trainers) do
+        if t.zone == zone then
+            local id = self:TrainerProfession(t)
+            local label = (id and L["PROF_" .. id] or "?") .. " (" .. (t.name or "?") .. ", " .. L["up to"] .. " " .. maxSkill(t) .. ")"
+            table.insert(list, label)
+            if id then found[id] = true end
+        end
+    end
+    table.sort(list)
+    local missing = {}
+    for _, id in ipairs(PROFS) do if not found[id] then table.insert(missing, L["PROF_" .. id]) end end
+    RM:Print(zone .. " – " .. L["recorded:"] .. " " .. (#list > 0 and table.concat(list, ", ") or "–"))
+    RM:Print(zone .. " – " .. L["still missing:"] .. " " .. (#missing > 0 and table.concat(missing, ", ") or "–"))
+end
+
 function C:Summary()
     local c = store()
     local trainers, services, crafts, colours = 0, 0, 0, 0
@@ -254,6 +304,7 @@ function C:Summary()
         for _ in pairs(e.obs or {}) do colours = colours + 1 end
     end
     RM:Print(string.format(L["Collected: %d trainers (%d entries), %d recipes, %d skill-up colours."], trainers, services, crafts, colours))
+    self:ZoneReport()
 end
 
 -- debounce: windows fire several update events in a row
@@ -264,7 +315,7 @@ local function soon(what, fn)
     C_Timer.After(0.4, function() pending[what] = nil; fn() end)
 end
 
-RM:On("TRAINER_SHOW", function() soon("trainer", function() C:ScanTrainer() end) end)
+RM:On("TRAINER_SHOW", function() C.retries = 0; soon("trainer", function() C:ScanTrainer() end) end)
 -- our own filter switching fires TRAINER_UPDATE too; ignore it for a moment to avoid a loop
 RM:On("TRAINER_UPDATE", function()
     if scanning or (C.lastOwn and GetTime() - C.lastOwn < 2) then return end
