@@ -120,6 +120,7 @@ function DB:Build(onDone)
                         drops = ItemDB.npcDrops(id),
                         limited = ns.LimitedSupply[id],
                         product = ns.RecipeProducts[id],
+                        loot = ns.LootSources and ns.LootSources[id],
                     }
                     local allRep = rec.vendors and #rec.vendors > 0
                     if rec.vendors then

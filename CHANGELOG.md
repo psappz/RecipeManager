@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.4.1
+
+### New
+- **Loot recipes** in the Recipes tab (BoE only for now): three new sources in the filter menu – **Loot: creature**, **Loot: chest or container** and **World drop**.
+  - The list shows the creature with its zone (plus how many more drop it), the chest or container, or "World drop (level 26-39)".
+  - The detail panel lists the best creatures, chests and containers with drop chance and, for world drops, the creature level range.
+  - World drops were missing completely before, recipes from chests and containers too.
+- Data from the CMaNGOS classic database; drop chances are Classic values and may differ in WoW Forever.
+
 ## 1.4.0
 
 ### New

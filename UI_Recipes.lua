@@ -12,8 +12,9 @@ local STAR_OFF = "|TInterface\\TargetingFrame\\UI-RaidTargetingIcon_1:14:14:0:0:
 local GREY = "|cff8a8270"
 local RANKS = { "Apprentice", "Journeyman", "Expert", "Artisan" }
 local RANK_LABEL = { Apprentice = "Apprentice (1-75)", Journeyman = "Journeyman (75-150)", Expert = "Expert (150-225)", Artisan = "Artisan (225-300)" }
-local SOURCES = { "vendor", "quest", "drop" }
-local SOURCE_LABEL = { vendor = "Vendor", quest = "Quest", drop = "Drop" }
+local SOURCES = { "vendor", "quest", "mob", "chest", "world" }
+local SOURCE_LABEL = { vendor = "Vendor", quest = "Quest", mob = "Loot: creature", chest = "Loot: chest or container", world = "World drop" }
+local LOOT = { mob = true, chest = true, world = true }
 local FLAGS = { "notLearned", "limited", "hot", "watch" }
 local FLAG_LABEL = { notLearned = "not learned", limited = "only Limited Supply", hot = "only hot", watch = "only watchlist" }
 
@@ -101,7 +102,54 @@ end
 local function sourceKind(rec, npc)
     if npc then return "vendor" end
     if rec.quests then return "quest" end
-    if rec.drops then return "drop" end
+    local l = rec.loot
+    if l and l.w then return "world" end
+    if (l and l.n) or rec.drops then return "mob" end
+    if l and (l.o or l.c) then return "chest" end
+end
+
+-- QuestieDB names and zones for loot sources
+local function npcName(id)
+    local ok, n = pcall(NpcDB.name, id)
+    return ok and n or ("#" .. id)
+end
+local function objectName(id)
+    local ok, n = pcall(ObjectDB.name, id)
+    return ok and n or ("#" .. id)
+end
+local function areaName(db, id)
+    local ok, area = pcall(db.zoneID, id)
+    if not ok or not area then return nil end
+    if C_Map and C_Map.GetAreaInfo then
+        local ok2, name = pcall(C_Map.GetAreaInfo, area)
+        if ok2 and name then return name end
+    end
+end
+local function pct(c)
+    if not c then return "" end
+    local s = c >= 1 and string.format("%.1f", c) or (c >= 0.1 and string.format("%.2f", c) or string.format("%.3f", c))
+    s = s:gsub("0+$", ""):gsub("%.$", "")
+    if GetLocale() ~= "enUS" and GetLocale() ~= "enGB" then s = s:gsub("%.", ",") end
+    return s .. " %"
+end
+
+-- short source text for the table
+local function lootSource(rec, kind)
+    local l = rec.loot or {}
+    if kind == "world" then
+        return GREY .. string.format(L["World drop (level %d-%d)"], l.w[1], l.w[2]) .. "|r"
+    elseif kind == "mob" then
+        local first = l.n and l.n[1]
+        if first then
+            local z = areaName(NpcDB, first[1])
+            return npcName(first[1]) .. (z and (" " .. GREY .. z .. "|r") or "") .. ((#l.n > 1) and (GREY .. " +" .. (#l.n - 1) .. "|r") or "")
+        end
+        return GREY .. L["Loot: creature"] .. "|r"
+    elseif kind == "chest" then
+        if l.o and l.o[1] then return GREY .. L["Chest"] .. ":|r " .. objectName(l.o[1][1]) end
+        if l.c and l.c[1] then return GREY .. L["Container"] .. ":|r " .. (itemName(l.c[1][1]) or "?") end
+    end
+    return GREY .. L[SOURCE_LABEL[kind]] .. "|r"
 end
 
 local function highlight(name, q)
@@ -147,6 +195,7 @@ local function rows()
                 if ok and near then ok = kind == "vendor" and dist ~= nil and dist <= radius end
                 if ok and F.flags.watch then ok = watch[id] end
                 local s = ok and RM.Rules:Status(id, npc)
+                if s and LOOT[kind] and s.bind == "BoP" then s = nil end -- BoP loot recipes: later
                 if s and F.flags.notLearned and s.known then s = nil end
                 if s and F.flags.limited and not s.limited then s = nil end
                 if s and F.flags.hot and not s.hot then s = nil end
@@ -166,6 +215,7 @@ local function rows()
                     if s.hot and tradable then tag = tag .. "|cffffb100[" .. L["HOT"] .. "]|r " end
                     local source
                     if npc then source = RM.Data.vendors[npc].name .. " " .. GREY .. zoneName(point and point[1]) .. "|r"
+                    elseif LOOT[kind] then source = lootSource(rec, kind)
                     else source = GREY .. L[SOURCE_LABEL[kind]] .. "|r" end
                     local isSel = sel and sel.itemID == id
                     table.insert(out, {
@@ -454,7 +504,31 @@ local function renderDetail(page)
         local v = list[i]
         table.insert(c2, v.name .. " " .. GREY .. v.zone .. "|r  " .. (v.allowed and RM:FormatDistance(v.d) or (GREY .. L["other faction"] .. "|r")))
     end
-    if #list == 0 then table.insert(c2, GREY .. ((rec.quests and L["Quest"]) or (rec.drops and L["Drop"]) or "-") .. "|r") end
+    if #list == 0 then
+        local l = rec.loot
+        if rec.quests then table.insert(c2, GREY .. L["Quest"] .. "|r") end
+        if l and l.w then
+            table.insert(c2, string.format(L["World drop: creatures of level %d-%d (%d kinds)"], l.w[1], l.w[2], l.w[3]))
+        end
+        local shown = 0
+        for _, e in ipairs(l and l.n or {}) do
+            if shown >= (l.w and 1 or 3) then break end
+            local z = areaName(NpcDB, e[1])
+            table.insert(c2, npcName(e[1]) .. (z and (" " .. GREY .. z .. "|r") or "") .. "  " .. GREY .. pct(e[2]) .. "|r")
+            shown = shown + 1
+        end
+        if l and l.o and l.o[1] and shown < 3 then
+            local z = areaName(ObjectDB, l.o[1][1])
+            table.insert(c2, L["Chest"] .. ": " .. objectName(l.o[1][1]) .. (z and (" " .. GREY .. z .. "|r") or "") .. "  " .. GREY .. pct(l.o[1][2]) .. "|r")
+            shown = shown + 1
+        end
+        if l and l.c and l.c[1] and shown < 3 then
+            table.insert(c2, L["Container"] .. ": " .. (itemName(l.c[1][1]) or "?") .. "  " .. GREY .. pct(l.c[1][2]) .. "|r")
+        end
+        if l then table.insert(c2, GREY .. L["Drop chances: Classic values, Forever may differ."] .. "|r")
+        elseif rec.drops then table.insert(c2, GREY .. L["Loot: creature"] .. "|r")
+        elseif not rec.quests then table.insert(c2, GREY .. "-|r") end
+    end
     if s.limited then
         local o = npc and RM.realm.observations[npc] and RM.realm.observations[npc][id]
         local restock = RM.Data:RestockSeconds(id, npc)

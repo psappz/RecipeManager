@@ -67,10 +67,10 @@ All vendor recipes for gold, sorted by what reselling the **recipe itself** earn
 - **Gold coin** – *very lucrative*: at least **4×** the vendor price (configurable).
 
 ### Recipes
-Look up any recipe – vendor, quest or drop.
+Look up any recipe – vendor, quest, creature loot, chests and containers, world drops (BoE loot recipes for now).
 
 - **Search** across recipe, crafted item, reagents, vendor and zone. Matches in the name are highlighted, other matches are named next to the recipe ("reagent: Crocolisk Meat").
-- **Filter menu**: profession ("My characters" picks the professions of all your characters), rank, source (vendor, quest, drop), status (not learned, Limited Supply, hot, watchlist) and "only vendors within …" (300 yards or meters).
+- **Filter menu**: profession ("My characters" picks the professions of all your characters), rank, source (vendor, quest, creature loot, chest or container, world drop), status (not learned, Limited Supply, hot, watchlist) and "only vendors within …" (300 yards or meters).
 - Active filters show as **chips** – click one to remove it, or reset all at once.
 - **Saved searches**: store any combination of search text and filters and apply it with one click (right-click deletes).
 - **Watchlist**: click the star. When a watched Limited Supply recipe was seen in stock (by you or your guild), a notice appears at the top.
@@ -104,7 +104,7 @@ On a fresh server, prices take a few scans to appear. Until then the window show
 ## Data
 
 - **QuestieDB** provides recipes, vendors, positions, quest rewards and drops. RecipeManager reads it once at login.
-- **Limited Supply** information, restock times and base vendor prices come from the CMaNGOS classic database.
+- **Limited Supply** information, restock times, base vendor prices and **loot sources with drop chances** come from the CMaNGOS classic database (drop chances are Classic values).
 - **Forever-only recipes** and changed vendors are **learned in game**: every vendor visit updates stock, prices and Limited Supply. `/rm export` creates a text with what your client has learned – please send it in so everyone benefits.
 - **Trainers and profession windows** are recorded too (costs, skill and level requirements, skill-up colours, reagents). `/rm data` shows what was recorded in your zone and which trainers are still missing.
 - **Share data** (settings, or `/rm share`): copy the text into the [data submission form](https://github.com/psappz/RecipeManager/issues/new?template=data-submission.yml) on GitHub. The window explains every step. Game data only – no character, guild or realm names.
