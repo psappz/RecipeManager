@@ -371,7 +371,11 @@ function W:Table(parent, columns, rowHeight, visibleRows, onClick)
             if onClick then onClick(self.item, button) end
         end)
         r:SetScript("OnEnter", function(self)
-            if self.item and self.item.itemID then
+            if self.item and self.item.onTooltip then
+                GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+                self.item.onTooltip(GameTooltip)
+                GameTooltip:Show()
+            elseif self.item and self.item.itemID then
                 GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
                 GameTooltip:SetItemByID(self.item.itemID)
                 GameTooltip:Show()

@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.5.0 (in development)
+
+### New
+- **Profession copilot**: a "Copilot" button above the profession window opens a panel beside it with every recipe of that profession, sorted by the skill needed to learn it.
+  - Colour square and skill number show what the recipe is for you now: red (not learnable yet), orange, yellow, green, grey.
+  - Source in colour: trainer (blue), vendor (gold), drop and world drop (purple), quest (white).
+  - Tooltip with all skill-up levels and details of the source (trainer and cost, vendor, world drop level range); click opens the recipe in RecipeManager.
+  - Learned recipes are hidden unless "show learned" is ticked.
+- Skill-up levels of Classic recipes from Skillet-Classic (GPL-3.0).
+
 ## 1.4.1
 
 ### New

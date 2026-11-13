@@ -62,6 +62,8 @@ local GLOBAL_DEFAULTS = {
     luxFactor = 4.0,          -- "very lucrative": AH price >= luxFactor x vendor price
     priceSource = "auto",     -- auto | auctionator | auctioneer | tsm | recipescan
     nearOnly = true,
+    copilot = true,           -- copilot panel beside the profession window
+    copilotLearned = false,   -- copilot also lists learned recipes
     nearRadius = 300,
     unit = nil,               -- yd | m; default: yards for English clients, meters for all others
     useMacro = true,

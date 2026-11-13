@@ -25,6 +25,7 @@ Data\LimitedSupply.lua
 Data\RecipeProducts.lua
 Data\VendorPrices.lua
 Data\LootSources.lua
+Data\SkillLevels.lua
 Core.lua
 Family.lua
 Database.lua
@@ -42,5 +43,6 @@ Sales.lua
 UI_Widgets.lua
 UI_Main.lua
 UI_Recipes.lua
+Copilot.lua
 UI_Settings.lua
 Init.lua
