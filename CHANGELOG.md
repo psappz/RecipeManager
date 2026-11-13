@@ -9,6 +9,9 @@
   - Tooltip with all skill-up levels and details of the source (trainer and cost, vendor, world drop level range); click opens the recipe in RecipeManager.
   - Learned recipes are hidden unless "show learned" is ticked.
 - Skill-up levels of Classic recipes from Skillet-Classic (GPL-3.0).
+- Trainer recipes with required skill and cost from CMaNGOS classic-db; Season-of-Discovery recipes get an estimated learn level (shown as "~").
+- Recipes without database entry take their source from the game client's own source text.
+- The panel sits right of the profession window's side tabs instead of covering them.
 
 ## 1.4.1
 

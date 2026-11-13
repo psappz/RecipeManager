@@ -204,6 +204,21 @@ function C:ScanTradeSkill()
                         if r and r.itemID then e.rea[r.itemID] = slot.quantityRequired or 1 end
                     end
                 end
+                if not info.learned and C_TradeSkillUI.GetRecipeSourceText then
+                    local src = call(C_TradeSkillUI.GetRecipeSourceText, rid)
+                    if type(src) == "string" and src ~= "" then e.src = src:sub(1, 300) end
+                end
+                if not info.learned and not (c.probe and c.probe[lineName or "?"]) then
+                    -- one-time snapshot of what this client's API offers for a not yet learned recipe
+                    c.probe = c.probe or {}
+                    local pr = { rid = rid, info = {}, api = {} }
+                    for k, v in pairs(info) do
+                        if type(v) ~= "table" and type(v) ~= "function" then pr.info[k] = tostring(v) end
+                    end
+                    for k, v in pairs(C_TradeSkillUI) do if type(v) == "function" then table.insert(pr.api, k) end end
+                    table.sort(pr.api)
+                    c.probe[lineName or "?"] = pr
+                end
                 local d = info.relativeDifficulty
                 if type(d) == "number" then d = DIFF[d] end
                 record(c, "r" .. rid, e, info.learned and rank or nil, info.learned and d or nil)

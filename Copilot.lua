@@ -31,7 +31,9 @@ local function square(c)
     return "|TInterface\\Buttons\\WHITE8X8:10:10:0:0:8:8:0:8:0:8:" .. r .. ":" .. g .. ":" .. b .. "|t"
 end
 
-local function hex(c) return string.format("|cff%02x%02x%02x", c[1] * 255, c[2] * 255, c[3] * 255) end
+local function hex(c)
+    return string.format("|cff%02x%02x%02x", math.floor(c[1] * 255), math.floor(c[2] * 255), math.floor(c[3] * 255))
+end
 
 ---------------------------------------------------------------------------
 -- Data
@@ -51,8 +53,41 @@ function CP:Levels(recipeID, out)
     if type(e) ~= "string" then return end
     local a, b, c, d = e:match("^(%d+)/(%d+)/(%d+)/(%d+)$")
     if not a then return end
-    return { tonumber(a), tonumber(b), tonumber(c), tonumber(d), fromSpell = fromSpell }
+    a, b, c, d = tonumber(a), tonumber(b), tonumber(c), tonumber(d)
+    local est
+    if fromSpell and a <= 1 and b > 1 then
+        -- spell data carries no learn level: estimate it one step below yellow
+        a, est = math.max(1, b - math.max(5, c - b)), true
+    end
+    return { a, b, c, d, fromSpell = fromSpell, est = est }
 end
+
+-- recipes taught by trainers (CMaNGOS): recipe spell -> required skill, cost
+function CP:TrainerSpell(recipeID)
+    local e = ns.TrainerSpells and recipeID and ns.TrainerSpells[recipeID]
+    if not e then return end
+    local lvl, cost = e:match("^(%d+)/(%d+)$")
+    return tonumber(lvl), tonumber(cost)
+end
+
+-- the client's own source text of a recipe (modern API), sorted into a kind
+local SOURCE_WORDS = {
+    { "world", { "world drop", "weltbeute", "weltdrop", "butin mondial", "botín mundial", "bottino mondiale" } },
+    { "trainer", { "trainer", "lehrer", "entraîneur", "instructor", "istruttore", "instrutor", "mestre" } },
+    { "vendor", { "vendor", "händler", "verkäufer", "vendeur", "marchand", "vendedor", "venditore", "mercante" } },
+    { "quest", { "quest", "quête", "misión", "missione", "missão" } },
+    { "drop", { "drop", "beute", "butin", "botín", "bottino", "saque" } },
+}
+local function sourceKind(text)
+    if type(text) ~= "string" or text == "" then return end
+    local t = text:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):lower()
+    for _, e in ipairs(SOURCE_WORDS) do
+        for _, w in ipairs(e[2]) do
+            if t:find(w, 1, true) then return e[1], t end
+        end
+    end
+end
+CP.SourceKind = sourceKind
 
 local function colorAt(lv, skill)
     if not lv then return nil end
@@ -123,8 +158,10 @@ local function windowRecipes()
                 end
                 local d = info.relativeDifficulty
                 if type(d) == "number" then d = ({ [0] = "optimal", [1] = "medium", [2] = "easy", [3] = "trivial" })[d] end
+                local src = craft and craft.src
+                if not src and not info.learned and C_TradeSkillUI.GetRecipeSourceText then src = call(C_TradeSkillUI.GetRecipeSourceText, rid) end
                 table.insert(list, { id = rid, name = info.name, learned = info.learned and true or false, out = out,
-                    diff = info.learned and MAP_DIFF[d] or nil, icon = info.icon })
+                    diff = info.learned and MAP_DIFF[d] or nil, icon = info.icon, src = src })
             end
         end
     elseif type(GetNumTradeSkills) == "function" then
@@ -151,19 +188,28 @@ function CP:Rows()
         local t = (r.out and tByItem[r.out]) or tByName[r.name]
         local recipeItem = recipeItemFor(r.out)
         local rec = recipeItem and RM.Data.recipes[recipeItem]
+        local tLevel, tCost = self:TrainerSpell(r.id)
+        local srcKind = sourceKind(r.src)
         local kind
-        if t then kind = "trainer"
+        if t or tLevel then kind = "trainer"
         elseif rec and rec.vendors and #rec.vendors > 0 then kind = "vendor"
         elseif rec and rec.loot and rec.loot.w then kind = "world"
         elseif rec and ((rec.loot and (rec.loot.n or rec.loot.o or rec.loot.c)) or rec.drops) then kind = "drop"
         elseif rec and rec.quests then kind = "quest"
+        elseif srcKind then kind = srcKind
         else kind = "unknown" end
-        local learnAt = (lv and not lv.fromSpell and lv[1]) or (t and t.level) or (recipeItem and (RM.Data:RecipeInfo(recipeItem) or {}).skill) or (lv and lv[1])
-        if lv and learnAt and lv[1] < learnAt then lv = { learnAt, math.max(lv[2], learnAt), math.max(lv[3], learnAt), math.max(lv[4], learnAt) } end
+        if not t and tLevel then t = { level = tLevel, cost = tCost } end
+        local itemSkill = recipeItem and (RM.Data:RecipeInfo(recipeItem) or {}).skill
+        -- learn level: trainer data, then the recipe item, then skill-up data (an estimate if it came from the spell)
+        local learnAt = (t and t.level) or itemSkill or (lv and lv[1])
+        local est = not (t and t.level) and not itemSkill and lv and lv.est or nil
+        if lv and learnAt and lv[1] ~= learnAt then
+            lv = { learnAt, math.max(lv[2], learnAt), math.max(lv[3], learnAt), math.max(lv[4], learnAt) }
+        end
         local diff = r.diff or colorAt(lv, rank)
         if not r.learned and learnAt and rank < learnAt then diff = "red" end
         table.insert(rows, { id = r.id, name = r.name, learned = r.learned, out = r.out, lv = lv, learnAt = learnAt,
-            diff = diff, kind = kind, trainer = t, recipeItem = recipeItem })
+            diff = diff, kind = kind, trainer = t, recipeItem = recipeItem, est = est, src = r.src })
     end
     table.sort(rows, function(a, b)
         local x, y = a.learnAt or 999, b.learnAt or 999
@@ -199,8 +245,12 @@ local function tooltip(row)
         tt:AddLine(" ")
         tt:AddLine(L["Source"] .. ": " .. s[2] .. L[s[1]] .. "|r")
         if row.trainer then
-            tt:AddLine(row.trainer.trainer .. " (" .. (row.trainer.zone or "?") .. ")" .. (row.trainer.cost and ("  " .. RM:Money(row.trainer.cost)) or ""), 0.8, 0.8, 0.8)
+            local who = row.trainer.trainer and (row.trainer.trainer .. " (" .. (row.trainer.zone or "?") .. ")") or L["any profession trainer"]
+            tt:AddLine(who .. (row.trainer.cost and row.trainer.cost > 0 and ("  " .. RM:Money(row.trainer.cost)) or ""), 0.8, 0.8, 0.8)
+        elseif row.src and not row.recipeItem then
+            tt:AddLine(row.src, 0.8, 0.8, 0.8, true)
         end
+        if row.est then tt:AddLine(L["Learn level estimated"], 0.6, 0.6, 0.6) end
         local rec = row.recipeItem and RM.Data.recipes[row.recipeItem]
         if rec and rec.vendors and rec.vendors[1] then
             local v = RM.Data.vendors[rec.vendors[1]]
@@ -217,8 +267,6 @@ function CP:Build(host)
     local W = RM.W
     local p = W:Panel(host, 0.06, 0.05, 0.03, 0.97)
     p:SetBackdropBorderColor(0.54, 0.45, 0.28, 1)
-    p:SetPoint("TOPLEFT", host, "TOPRIGHT", 2, 0)
-    p:SetPoint("BOTTOMLEFT", host, "BOTTOMRIGHT", 2, 0)
     p:SetWidth(380)
     p:SetFrameStrata(host:GetFrameStrata())
     p:EnableMouse(true)
@@ -248,6 +296,45 @@ function CP:Build(host)
     return p
 end
 
+-- tabs and other pieces that stick out on the right of the profession window (side tabs of the
+-- window itself or of other addons): the panel goes right of them
+local function rightOverhang(host)
+    local right = host:GetRight()
+    if not right then return 0 end
+    local scale = host:GetEffectiveScale()
+    local m = 0
+    local function check(f)
+        if f == host.rmCopilot or f == host.rmCopilotButton or not f:IsShown() then return end
+        local r, top, bottom = f:GetRight(), f:GetTop(), f:GetBottom()
+        if not (r and top and bottom) then return end
+        r = r * f:GetEffectiveScale() / scale
+        local over = r - right
+        -- only things beside the window, not tooltips or frames that just happen to be parented here
+        if over > m and over < 90 and (f:GetWidth() or 0) < 120 then m = over end
+    end
+    for _, c in ipairs({ host:GetChildren() }) do check(c) end
+    for _, name in ipairs({ "ProfessionsFrameTab", "TradeSkillFrameTab", "SpellBookSkillLineTab" }) do
+        for i = 1, 12 do
+            local f = _G[name .. i]
+            if f and f.GetParent and f:IsShown() then
+                local par, near = f:GetParent(), false
+                while par do if par == host then near = true break end par = par:GetParent() end
+                if near then check(f) end
+            end
+        end
+    end
+    return m
+end
+
+function CP:Place(p, host)
+    local x = math.floor(rightOverhang(host) + 0.5) + 4
+    if p.placedX == x then return end
+    p.placedX = x
+    p:ClearAllPoints()
+    p:SetPoint("TOPLEFT", host, "TOPRIGHT", x, 0)
+    p:SetPoint("BOTTOMLEFT", host, "BOTTOMRIGHT", x, 0)
+end
+
 function CP:Refresh()
     local host = profFrame()
     if not host then return end
@@ -266,19 +353,20 @@ function CP:Refresh()
     end
     local p = host.rmCopilot or self:Build(host)
     host.rmCopilot = p
+    self:Place(p, host)
     p:Show()
     local list, lineName, rank = self:Rows()
     local data, learnable, total = {}, 0, 0
     for _, r in ipairs(list) do
         total = total + 1
-        if not r.learned and r.diff ~= "red" then learnable = learnable + 1 end
+        if not r.learned and r.learnAt and r.diff ~= "red" then learnable = learnable + 1 end
         if RM.settings.copilotLearned or not r.learned then
             local c = DIFF_COLOR[r.diff or "grey"] or DIFF_COLOR.grey
             local s = SOURCE[r.kind]
             local npc = r.recipeItem and RM.Data.recipes[r.recipeItem] and RM.Data.recipes[r.recipeItem].vendors and RM.Data.recipes[r.recipeItem].vendors[1]
             table.insert(data, {
                 dot = r.diff and square(c) or "",
-                skill = r.learnAt and (hex(c) .. r.learnAt .. "|r") or "|cff8a8270?|r",
+                skill = r.learnAt and (hex(c) .. (r.est and "~" or "") .. r.learnAt .. "|r") or "|cff8a8270?|r",
                 name = (r.learned and "|cff9d9d9d" or "|cffffffff") .. r.name .. "|r" .. (r.learned and " |cff7ad07a(" .. L["known"] .. ")|r" or ""),
                 source = s[2] .. L[s[1]] .. "|r",
                 sortValues = { skill = r.learnAt or 999, dot = DIFF_ORDER[r.diff or "grey"] },

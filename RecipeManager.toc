@@ -26,6 +26,7 @@ Data\RecipeProducts.lua
 Data\VendorPrices.lua
 Data\LootSources.lua
 Data\SkillLevels.lua
+Data\TrainerSpells.lua
 Core.lua
 Family.lua
 Database.lua
