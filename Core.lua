@@ -117,8 +117,6 @@ function RM:InitDB()
 
     self.db = db
     self.settings = db.settings
-    -- UI language chosen in the settings (otherwise the client language)
-    if self.settings.language and self.settings.language ~= "auto" then ns.SetLanguage(self.settings.language) end
     -- distance unit follows the client language until the player picks one
     if not self.settings.unitChosen then
         local loc = GetLocale()
