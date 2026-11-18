@@ -502,6 +502,45 @@ function CP:ShowDetail(row)
     d:Show()
 end
 
+-- tabs and other pieces that stick out on the right of the profession window (side tabs of the
+-- window itself or of other addons): the panel goes right of them
+local function rightOverhang(host)
+    local right = host:GetRight()
+    if not right then return 0 end
+    local scale = host:GetEffectiveScale()
+    local m = 0
+    local function check(f)
+        if f == host.rmCopilot or f == host.rmCopilotButton or not f:IsShown() then return end
+        local r, top, bottom = f:GetRight(), f:GetTop(), f:GetBottom()
+        if not (r and top and bottom) then return end
+        r = r * f:GetEffectiveScale() / scale
+        local over = r - right
+        -- only things beside the window, not tooltips or frames that just happen to be parented here
+        if over > m and over < 90 and (f:GetWidth() or 0) < 120 then m = over end
+    end
+    for _, c in ipairs({ host:GetChildren() }) do check(c) end
+    for _, name in ipairs({ "ProfessionsFrameTab", "TradeSkillFrameTab", "SpellBookSkillLineTab" }) do
+        for i = 1, 12 do
+            local f = _G[name .. i]
+            if f and f.GetParent and f:IsShown() then
+                local par, near = f:GetParent(), false
+                while par do if par == host then near = true break end par = par:GetParent() end
+                if near then check(f) end
+            end
+        end
+    end
+    return m
+end
+
+function CP:Place(p, host)
+    local x = math.floor(rightOverhang(host) + 0.5) + 4
+    if p.placedX == x then return end
+    p.placedX = x
+    p:ClearAllPoints()
+    p:SetPoint("TOPLEFT", host, "TOPRIGHT", x, 0)
+    p:SetPoint("BOTTOMLEFT", host, "BOTTOMRIGHT", x, 0)
+end
+
 function CP:Refresh()
     local host = profFrame()
     if not host then return end
