@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.5.1 (in development)
+
+### New
+- **Language** in the settings: RecipeManager can use another of its six languages than the game client (takes effect after a reload). Recipe, item and zone names still come from the client.
+
 ## 1.5.0
 
 ### New

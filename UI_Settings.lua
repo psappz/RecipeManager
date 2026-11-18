@@ -153,6 +153,33 @@ function S.Build(page)
     page.unmute:SetPoint("TOPRIGHT", -10, -4)
     page.share = W:Button(t, L["Share data"], 120, function() RM.Collector:ShowShare() end)
     page.share:SetPoint("RIGHT", page.unmute, "LEFT", -6, 0)
+    -- UI language (client language by default); takes effect after a reload
+    local function wanted()
+        local v = RM.settings.language
+        if not v or v == "auto" then return nil end
+        return v
+    end
+    page.lang = add(W:Cycle(t, 170, function()
+        local o = {}
+        for _, e in ipairs(ns.LANGUAGES) do
+            table.insert(o, { e[1], L["Language"] .. ": " .. (e[1] == "auto" and L["Automatic"] or e[2]) })
+        end
+        return o
+    end, function() return RM.settings.language or "auto" end, function(v)
+        RM.settings.language = v
+        S:Refresh(page)
+    end))
+    page.lang:SetPoint("RIGHT", page.share, "LEFT", -6, 0)
+    page.lang:HookScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:AddLine(L["Language"], 1, 0.82, 0)
+        GameTooltip:AddLine(L["TIP_LANGUAGE"], 1, 1, 1, true)
+        GameTooltip:Show()
+    end)
+    page.lang:HookScript("OnLeave", function() GameTooltip:Hide() end)
+    page.reload = W:Button(t, L["Reload UI"], 110, function() ReloadUI() end)
+    page.reload:SetPoint("RIGHT", page.lang, "LEFT", -6, 0)
+    page.langWanted = wanted
     page.twinkRows = {}
     for r = 1, 8 do
         local row = CreateFrame("Frame", nil, t)
@@ -187,6 +214,12 @@ function S:Refresh(page)
         or L["No AH addon with shared prices found: RecipeScan can be used (button in the auction house)."])
 
     page.family:Refresh()
+    -- reload button only while the chosen language is not the one in use
+    local want = page.langWanted()
+    local code = want or GetLocale()
+    code = ({ enGB = "enUS", esMX = "esES", ptPT = "ptBR" })[code] or code
+    if not ns.LOCALES[code] and code ~= "enUS" then code = "enUS" end
+    page.reload:SetShown(code ~= ns.language)
 
     -- current character first, then twinks
     local names = { RM.playerName }
