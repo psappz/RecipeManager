@@ -495,14 +495,16 @@ local function renderDetail(page)
                 local dd = RM:Distance(cont, px, py, c, wx, wy)
                 if not best or (dd and (not best.d or dd < best.d)) then best = { d = dd, map = pt[1] } end
             end
-            local allowed = RM.Data:VendorAllowed(vend)
-            table.insert(list, { name = vend.name, zone = zoneName(best and best.map), d = best and best.d, allowed = allowed })
+            local allowed, why = RM.Data:VendorAllowed(vend)
+            local season = why == "season" and RM.Data.HOLIDAYS[RM.Data:VendorSeason(vend)]
+            table.insert(list, { name = vend.name, zone = zoneName(best and best.map), d = best and best.d, allowed = allowed,
+                note = season and string.format(L["only during %s"], L[season.key]) or nil })
         end
     end
     table.sort(list, function(a, b) return (a.allowed and 0 or 1) < (b.allowed and 0 or 1) or ((a.allowed == b.allowed) and (a.d or 1e9) < (b.d or 1e9)) end)
     for i = 1, math.min(3, #list) do
         local v = list[i]
-        table.insert(c2, v.name .. " " .. GREY .. v.zone .. "|r  " .. (v.allowed and RM:FormatDistance(v.d) or (GREY .. L["other faction"] .. "|r")))
+        table.insert(c2, v.name .. " " .. GREY .. v.zone .. "|r  " .. (v.allowed and RM:FormatDistance(v.d) or (GREY .. (v.note or L["other faction"]) .. "|r")))
     end
     if #list == 0 then
         local l = rec.loot

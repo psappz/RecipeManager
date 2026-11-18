@@ -201,9 +201,79 @@ function DB:RestockSeconds(itemID, npc)
     return l and l[2]
 end
 
+-- World events (client holiday id): calendar names to recognise them, and the usual dates as fallback
+DB.HOLIDAYS = {
+    [141] = { key = "Feast of Winter Veil", words = { "winter veil", "winterhauch", "voile d'hiver", "invierno", "inverno" },
+        from = { 12, 15 }, to = { 1, 2 } },
+}
+
+local holidayCache, calendarOpened = {}, false
+local function today()
+    if C_DateAndTime and C_DateAndTime.GetCurrentCalendarTime then
+        local ok, t = pcall(C_DateAndTime.GetCurrentCalendarTime)
+        if ok and type(t) == "table" and t.month then return t.month, t.monthDay, t.year end
+    end
+    local t = date("*t")
+    return t.month, t.day, t.year
+end
+
+-- the game's calendar: true/false when it knows today's events, nil when it has nothing loaded
+local function calendarSays(id, h, month, day, year)
+    local C = C_Calendar
+    if not (C and C.GetNumDayEvents and C.GetDayEvent and C.GetMonthInfo) then return nil end
+    if not calendarOpened and C.OpenCalendar then calendarOpened = true pcall(C.OpenCalendar) end
+    local ok, mi = pcall(C.GetMonthInfo, 0)
+    if not ok or type(mi) ~= "table" or mi.month ~= month or mi.year ~= year then return nil end
+    local ok2, n = pcall(C.GetNumDayEvents, 0, day)
+    if not ok2 or not n or n == 0 then return nil end
+    local holidays = 0
+    for i = 1, n do
+        local ok3, e = pcall(C.GetDayEvent, 0, day, i)
+        if ok3 and type(e) == "table" and e.calendarType == "HOLIDAY" then
+            holidays = holidays + 1
+            if e.eventID == id then return true end
+            local title = type(e.title) == "string" and e.title:lower() or ""
+            for _, w in ipairs(h.words) do
+                if title:find(w, 1, true) then return true end
+            end
+        end
+    end
+    if holidays > 0 then return false end
+    return nil
+end
+
+local function inWindow(h, month, day)
+    local d = month * 100 + day
+    local a, b = h.from[1] * 100 + h.from[2], h.to[1] * 100 + h.to[2]
+    if a <= b then return d >= a and d <= b end
+    return d >= a or d <= b -- over the turn of the year
+end
+
+-- Is the world event running today? Calendar first, the usual dates otherwise.
+function DB:HolidayActive(id)
+    local h = self.HOLIDAYS[id]
+    if not h then return true end -- unknown event: do not hide anything
+    local c = holidayCache[id]
+    if c and GetTime() - c.at < 300 then return c.on end
+    local month, day, year = today()
+    local on = calendarSays(id, h, month, day, year)
+    if on == nil then on = inWindow(h, month, day) end
+    holidayCache[id] = { on = on, at = GetTime() }
+    return on
+end
+
+-- Seasonal vendor (only there during a world event): holiday id and whether it is running
+function DB:VendorSeason(v)
+    local id = v and v.id and ns.SeasonalVendors and ns.SeasonalVendors[v.id]
+    if not id then return nil end
+    return id, self:HolidayActive(id)
+end
+
 function DB:VendorAllowed(v)
     if not v then return false end
     if v.favor then return false end
+    local season, running = self:VendorSeason(v)
+    if season and not running then return false, "season" end
     local f = v.faction
     if not f then return true end -- unknown: allow
     if RM.faction == "Horde" then return f:find("H", 1, true) ~= nil end

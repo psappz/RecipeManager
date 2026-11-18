@@ -71,7 +71,26 @@ function S.Build(page)
     local c2 = add(W:Check(w, L["Warn only for Limited Supply"], function() return set.warnLimitedOnly end, function(v) set.warnLimitedOnly = v end))
     c2:SetPoint("TOPLEFT", 8, -50)
     local c3 = add(W:Check(w, L["Warning sound"], function() return set.sound end, function(v) set.sound = v end))
-    c3:SetPoint("TOPLEFT", 8, -74)
+    c3:SetPoint("TOPLEFT", 300, -50)
+    local c4 = add(W:Check(w, L["Warn only for recipes I can learn"], function() return set.warnLearnableOnly end,
+        function(v) set.warnLearnableOnly = v end))
+    c4:SetPoint("TOPLEFT", 8, -74)
+    local c4p = W:Text(w, "GameFontHighlightSmall", "+")
+    c4p:SetPoint("LEFT", c4.text, "RIGHT", 10, 0)
+    local c4n = add(W:Number(w, 36, function() return set.learnAhead or 0 end,
+        function(v) set.learnAhead = math.max(0, math.min(300, math.floor(v + 0.5))) end))
+    c4n:SetPoint("LEFT", c4p, "RIGHT", 4, 0)
+    local c4l = W:Text(w, "GameFontHighlightSmall", L["skill points"])
+    c4l:SetPoint("LEFT", c4n, "RIGHT", 6, 0)
+    for _, f in ipairs({ c4, c4n }) do
+        f:HookScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:AddLine(L["Warn only for recipes I can learn"], 1, 0.82, 0)
+            GameTooltip:AddLine(L["TIP_LEARNABLE_ONLY"], 1, 1, 1, true)
+            GameTooltip:Show()
+        end)
+        f:HookScript("OnLeave", function() GameTooltip:Hide() end)
+    end
     local l1 = W:Text(w, "GameFontHighlightSmall", L["Warning distance"])
     l1:SetPoint("TOPLEFT", 14, -106)
     page.warnLabel = l1

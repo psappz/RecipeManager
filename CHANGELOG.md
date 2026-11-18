@@ -3,6 +3,8 @@
 ## 1.5.0 (in development)
 
 ### New
+- **Warn only for recipes I can learn** (settings, off by default): warnings only for recipes the character can learn now or within +x skill points (default 10). A BoE recipe for a twink counts with the twink's skill.
+- **Seasonal vendors**: event-only recipe vendors (Feast of Winter Veil: Seersa Copperpinch, Khole Jinglepocket and others) no longer trigger warnings and are left out of the Hot and vendor lists while the event is not running. The game calendar decides, the usual event dates are the fallback.
 - **Profession copilot**: a "Copilot" button above the profession window opens a panel beside it with every recipe of that profession, sorted by the skill needed to learn it.
   - Colour square and skill number show what the recipe is for you now: red (not learnable yet), orange, yellow, green, grey.
   - Source in colour: trainer (blue), vendor (gold), drop and world drop (purple), quest (white).

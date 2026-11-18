@@ -14,11 +14,22 @@ function R:InScope(skillLine)
     return RM.Prof:Skill(skillLine) ~= nil
 end
 
+-- the twink with this profession and the highest skill in it
 function R:TwinkWithProfession(skillLine)
+    local best, bestSkill
     for _, name in ipairs(RM.Prof:Twinks()) do
         local c = RM.realm.chars[name]
-        if c.twink ~= false and c.profs and c.profs[skillLine] then return name, c.profs[skillLine] end
+        local sk = c.twink ~= false and c.profs and c.profs[skillLine]
+        if sk then
+            local n = tonumber(type(sk) == "table" and (sk.rank or sk.skill) or sk) or 0
+            if not best or n > bestSkill then best, bestSkill = name, n end
+        end
     end
+    return best, best and RM.realm.chars[best].profs[skillLine]
+end
+
+local function skillNumber(sk)
+    return tonumber(type(sk) == "table" and (sk.rank or sk.skill) or sk)
 end
 
 -- Returns a status table for a recipe item, optionally at a given vendor.
@@ -47,7 +58,7 @@ function R:Status(itemID, npc)
     else
         local tw, twSkill = self:TwinkWithProfession(rec.skillLine)
         if tw and s.bind == "BoE" then
-            s.state, s.twink = "twink", tw
+            s.state, s.twink, s.twinkSkill = "twink", tw, skillNumber(twSkill)
             s.text = string.format(L["for %s (%d)"], tw, twSkill or 0)
             s.color = "|cff8fd0ff"
         else
@@ -60,8 +71,20 @@ function R:Status(itemID, npc)
 end
 
 -- Should the proximity warning include this recipe?
+-- Can the character (or, for a BoE recipe, a twink) learn it now or within the set number of points?
+function R:LearnableSoon(s)
+    local ahead = math.max(0, tonumber(RM.settings.learnAhead) or 0)
+    if s.known then return false end
+    local skill
+    if s.state == "learnable" or s.state == "presale" then skill = s.mySkill
+    elseif s.state == "twink" then skill = s.twinkSkill end
+    if not skill then return false end
+    return not s.req or skill + ahead >= s.req
+end
+
 function R:ShouldWarn(s)
     local set = RM.settings
+    if set.warnLearnableOnly and not self:LearnableSoon(s) then return false end
     -- a BoE recipe that one of my characters already has in bags, bank or mail is not worth a warning
     if set.skipOwned and s.bind == "BoE" and not s.known and RM.Int and RM.Int:Owned(s.id) then return false end
     if s.limited then

@@ -27,6 +27,7 @@ Data\VendorPrices.lua
 Data\LootSources.lua
 Data\SkillLevels.lua
 Data\TrainerSpells.lua
+Data\SeasonalVendors.lua
 Core.lua
 Family.lua
 Database.lua
