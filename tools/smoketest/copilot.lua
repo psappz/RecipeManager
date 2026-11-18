@@ -5,7 +5,7 @@ s.copilot = true s.copilotLearned = true s.muted = {}
 RM.db = RM.db or {}
 RM.db.collect = { crafts = { r3915 = { name="Braunes Leinenhemd", out=4344, rea={[2996]=1}, lineName="Schneiderei", learned=true }, r12087 = {name="Sturmstoffschultern", out=10038, lineName="Schneiderei"} }, trainers = {} }
 RM.db.recipeInfo = {}
-RM.realm = RM.realm or { chars = {}, observations = {}, vendors = {} }
+RM.realm = RM.realm or { chars = {}, observations = {}, vendors = {}, prices = {} }
 RM.char = RM.char or { focus = {} }
 RM.W = RM.W
 _G.ProfessionsFrame = newmock("ProfessionsFrame")

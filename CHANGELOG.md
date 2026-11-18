@@ -17,7 +17,7 @@
 - The panel sits right of the profession window's side tabs instead of covering them.
 - Button "RecipeManager Copilot" shows and hides the panel (no close button any more).
 - Click a colour in the legend to hide or show the recipes of that colour (e.g. no grey ones).
-- Click a recipe: the list shrinks to two thirds and a detail box below shows skill-up levels, source (trainer and cost, nearest vendor with distance and price, drops, event), reagents with what you have, and buttons to open it in RecipeManager or show the way. Click it again to close.
+- Click a recipe: the list shrinks to two thirds and a detail box below shows skill-up levels, source (trainer and cost, nearest vendor with distance and price, drops, event), reagents with what you have, the crafting margin (materials against the product's AH price after the AH cut) and, for BoE recipes, the resale margin of the recipe, and buttons to open it in RecipeManager or show the way. Click it again to close.
 
 ## 1.4.1
 

@@ -162,9 +162,10 @@ local function windowRecipes()
                 if type(d) == "number" then d = ({ [0] = "optimal", [1] = "medium", [2] = "easy", [3] = "trivial" })[d] end
                 local src = craft and craft.src
                 if not src and not info.learned and C_TradeSkillUI.GetRecipeSourceText then src = call(C_TradeSkillUI.GetRecipeSourceText, rid) end
-                local rea = craft and craft.rea
+                local rea, qty = craft and craft.rea, craft and craft.qty
                 if not rea and C_TradeSkillUI.GetRecipeSchematic then
                     local sc = call(C_TradeSkillUI.GetRecipeSchematic, rid, false)
+                    if type(sc) == "table" then qty = qty or sc.quantityMin end
                     if type(sc) == "table" and sc.reagentSlotSchematics then
                         rea = {}
                         for _, slot in ipairs(sc.reagentSlotSchematics) do
@@ -175,7 +176,7 @@ local function windowRecipes()
                 end
                 if info.learned or not RM.Data:IsSoDItem(out) then
                     table.insert(list, { id = rid, name = info.name, learned = info.learned and true or false, out = out,
-                        diff = info.learned and MAP_DIFF[d] or nil, icon = info.icon, src = src, rea = rea })
+                        diff = info.learned and MAP_DIFF[d] or nil, icon = info.icon, src = src, rea = rea, qty = qty })
                 end
             end
         end
@@ -226,7 +227,7 @@ function CP:Rows()
         local diff = r.diff or colorAt(lv, rank)
         if not r.learned and learnAt and rank < learnAt then diff = "red" end
         table.insert(rows, { id = r.id, name = r.name, learned = r.learned, out = r.out, lv = lv, learnAt = learnAt,
-            diff = diff, kind = kind, trainer = t, season = season, recipeItem = recipeItem, est = est, src = r.src, rea = r.rea, icon = r.icon })
+            diff = diff, kind = kind, trainer = t, season = season, recipeItem = recipeItem, est = est, src = r.src, rea = r.rea, qty = r.qty, icon = r.icon })
     end
     table.sort(rows, function(a, b)
         local x, y = a.learnAt or 999, b.learnAt or 999
@@ -299,6 +300,14 @@ local function pct(c)
     return t .. " %"
 end
 
+-- price a buyer pays for a reagent: vendor if cheaper, else AH
+local function reagentPrice(id)
+    local ah = RM.Prices and RM.Prices:AHPrice(id)
+    local v = ns.VendorPrices and ns.VendorPrices[id]
+    if v and (not ah or v <= ah) then return v end
+    return ah
+end
+
 function CP:DetailLines(row)
     local out = {}
     local function add(t) table.insert(out, t) end
@@ -312,14 +321,12 @@ function CP:DetailLines(row)
             hex(DIFF_COLOR.green) .. L["DIFF_green"] .. " " .. lv[3] .. "|r",
             hex(DIFF_COLOR.grey) .. L["DIFF_grey"] .. " " .. lv[4] .. "|r",
         }
-        add(table.concat(parts, "  -  "))
-    elseif row.learnAt then
-        add(string.format(L["Learn at %d"], row.learnAt))
+        add(table.concat(parts, "  -  ") .. "   " .. L["Now"] .. ": " .. (c and (hex(c) .. L["DIFF_" .. row.diff] .. "|r") or (GREY .. "?|r"))
+            .. (row.learned and ("   |cff7ad07a" .. L["known"] .. "|r") or ""))
     else
-        add(GREY .. L["Skill-up levels unknown (Forever recipe?)"] .. "|r")
+        add((row.learnAt and string.format(L["Learn at %d"], row.learnAt) or (GREY .. L["Skill-up levels unknown (Forever recipe?)"] .. "|r"))
+            .. (row.learned and ("   |cff7ad07a" .. L["known"] .. "|r") or ""))
     end
-    add(L["Now"] .. ": " .. (c and (hex(c) .. L["DIFF_" .. row.diff] .. "|r") or (GREY .. "?|r"))
-        .. (row.learned and ("   |cff7ad07a" .. L["known"] .. "|r") or ""))
     -- source
     local src = SOURCE[row.kind]
     local rec = row.recipeItem and RM.Data.recipes[row.recipeItem]
@@ -375,6 +382,38 @@ function CP:DetailLines(row)
         end
         table.sort(parts)
         add(L["Reagents"] .. ": " .. table.concat(parts, ", "))
+    end
+    -- crafting margin: product on the AH (after the AH cut) against what the reagents cost
+    local P = RM.Prices
+    if P and row.out then
+        local mat, complete = 0, row.rea ~= nil and next(row.rea) ~= nil
+        for id, n in pairs(row.rea or {}) do
+            local price = reagentPrice(id)
+            if price then mat = mat + price * n else complete = false end
+        end
+        local qty = row.qty or 1
+        local sell = P:Net(P:AHPrice(row.out))
+        local parts = {}
+        table.insert(parts, L["Materials per craft"] .. ": " .. (complete and RM:Money(mat) or L["no price"]))
+        table.insert(parts, L["Product"] .. " " .. L["AH"] .. ": " .. (sell and (RM:Money(sell * qty) .. (qty > 1 and (" (" .. qty .. "x)") or "")) or L["no price"]))
+        if sell and complete then
+            local profit = sell * qty - mat
+            table.insert(parts, L["Craft profit"] .. ": " .. (profit >= 0 and "|cff7ad07a+|r " or "|cffff6060-|r ") .. RM:Money(math.abs(profit)))
+        end
+        add(table.concat(parts, "  -  "))
+    end
+    -- resale of the recipe itself (not for bind-on-pickup recipes)
+    if row.recipeItem and RM.Rules then
+        local st = RM.Rules:Status(row.recipeItem, npc)
+        if st and st.bind ~= "BoP" and (st.vendorPrice or st.ahPrice) then
+            local t = L["AH recipe"] .. ": " .. (st.ahPrice and RM:Money(st.ahPrice) or L["no price"])
+            if st.vendorPrice then t = t .. "  -  " .. L["vendor"] .. ": " .. RM:Money(st.vendorPrice) end
+            if st.margin then
+                t = t .. "  -  " .. L["Margin"] .. ": " .. RM:Money(st.margin)
+                    .. (st.hot and ("  |cffffb100[" .. L["HOT"] .. "]|r") or "")
+            end
+            add(t)
+        end
     end
     return out, npc, point
 end
@@ -447,7 +486,7 @@ function CP:Build(host)
     d.text:SetPoint("BOTTOM", d, "BOTTOM", 0, 32)
     d.text:SetJustifyH("LEFT")
     d.text:SetJustifyV("TOP")
-    d.text:SetSpacing(3)
+    d.text:SetSpacing(2)
     d.open = W:Button(d, L["Open in RecipeManager"], 150, function()
         if d.row and d.row.recipeItem and RM.UI then RM.UI:SelectRecipe(d.row.recipeItem, d.npc, d.point) end
     end)
