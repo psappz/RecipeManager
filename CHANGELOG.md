@@ -1,23 +1,22 @@
 # Changelog
 
-## 1.5.0 (in development)
+## 1.5.0
 
 ### New
-- **No Season of Discovery recipes**: SoD recipes that the Forever client and QuestieDB still carry are hidden in the copilot, the lists and the warnings (list from AtlasLootClassic_Crafting plus the SoD ID ranges).
+- **Profession copilot**: the "RecipeManager Copilot" button above the profession window shows a panel beside it with every recipe of that profession, sorted by the skill needed to learn it. Click the button again to hide it.
+  - Colour square and skill number show what the recipe is for you now: red (not learnable yet), orange, yellow, green, grey. An estimated learn level is shown as "~".
+  - Source in colour: trainer (blue), vendor (gold), drop and world drop (purple), quest (white), world event (orange).
+  - Click a colour in the legend to hide or show those recipes, e.g. no grey ones. Learned recipes only with "show learned".
+  - Click a recipe for a detail box: skill-up levels, source (trainer and cost, nearest vendor with distance and price, drops, event), reagents with what you have, crafting margin (materials against the product's AH price after the AH cut), resale margin of BoE recipes, and buttons to open it in RecipeManager or show the way. Click it again to close.
 - **Warn only for recipes I can learn** (settings, off by default): warnings only for recipes the character can learn now or within +x skill points (default 10). A BoE recipe for a twink counts with the twink's skill.
-- **Event recipes**: recipes and vendors of world events (Feast of Winter Veil, Lunar Festival, Pilgrim's Bounty) no longer trigger warnings and are left out of the Hot and vendor lists while the event is not running (e.g. Seersa Copperpinch). The game calendar decides, the usual event dates are the fallback. The recipe details show "only during ...".
-- **Profession copilot**: a "Copilot" button above the profession window opens a panel beside it with every recipe of that profession, sorted by the skill needed to learn it.
-  - Colour square and skill number show what the recipe is for you now: red (not learnable yet), orange, yellow, green, grey.
-  - Source in colour: trainer (blue), vendor (gold), drop and world drop (purple), quest (white).
-  - Tooltip with all skill-up levels and details of the source (trainer and cost, vendor, world drop level range); click opens the recipe in RecipeManager.
-  - Learned recipes are hidden unless "show learned" is ticked.
+- **Event recipes**: recipes and vendors of world events (Feast of Winter Veil, Lunar Festival, Pilgrim's Bounty) no longer trigger warnings and are left out of the Hot and vendor lists while the event is not running (e.g. Seersa Copperpinch). The game calendar decides, the usual event dates are the fallback. Recipe details show "only during ...".
+- **No Season of Discovery recipes**: SoD recipes that the Forever client and QuestieDB still carry are hidden in the copilot, the lists and the warnings.
+
+### Data
+- Trainer recipes with required skill and cost from CMaNGOS classic-db (GPL-2.0).
 - Skill-up levels of Classic recipes from Skillet-Classic (GPL-3.0).
-- Trainer recipes with required skill and cost from CMaNGOS classic-db; Season-of-Discovery recipes get an estimated learn level (shown as "~").
-- Recipes without database entry take their source from the game client's own source text.
-- The panel sits right of the profession window's side tabs instead of covering them.
-- Button "RecipeManager Copilot" shows and hides the panel (no close button any more).
-- Click a colour in the legend to hide or show the recipes of that colour (e.g. no grey ones).
-- Click a recipe: the list shrinks to two thirds and a detail box below shows skill-up levels, source (trainer and cost, nearest vendor with distance and price, drops, event), reagents with what you have, the crafting margin (materials against the product's AH price after the AH cut) and, for BoE recipes, the resale margin of the recipe, and buttons to open it in RecipeManager or show the way. Click it again to close.
+- SoD recipe list from AtlasLootClassic_Crafting (GPL-2.0).
+- The data collector also records which recipe data the client offers, to close the gaps for Forever's own recipes.
 
 ## 1.4.1
 
