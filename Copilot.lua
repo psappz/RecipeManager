@@ -149,6 +149,8 @@ local function windowRecipes()
     if C_TradeSkillUI and C_TradeSkillUI.GetAllRecipeIDs then
         for _, rid in ipairs(call(C_TradeSkillUI.GetAllRecipeIDs) or {}) do
             local info = call(C_TradeSkillUI.GetRecipeInfo, rid)
+            -- Season of Discovery recipes are not part of Forever
+            if info and not info.learned and RM.Data:IsSoDSpell(rid) then info = nil end
             if info and info.name then
                 local craft = RM.db.collect and RM.db.collect.crafts and RM.db.collect.crafts["r" .. rid]
                 local out = craft and craft.out
@@ -171,8 +173,10 @@ local function windowRecipes()
                         end
                     end
                 end
-                table.insert(list, { id = rid, name = info.name, learned = info.learned and true or false, out = out,
-                    diff = info.learned and MAP_DIFF[d] or nil, icon = info.icon, src = src, rea = rea })
+                if info.learned or not RM.Data:IsSoDItem(out) then
+                    table.insert(list, { id = rid, name = info.name, learned = info.learned and true or false, out = out,
+                        diff = info.learned and MAP_DIFF[d] or nil, icon = info.icon, src = src, rea = rea })
+                end
             end
         end
     elseif type(GetNumTradeSkills) == "function" then

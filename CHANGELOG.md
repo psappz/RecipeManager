@@ -3,6 +3,7 @@
 ## 1.5.0 (in development)
 
 ### New
+- **No Season of Discovery recipes**: SoD recipes that the Forever client and QuestieDB still carry are hidden in the copilot, the lists and the warnings (list from AtlasLootClassic_Crafting plus the SoD ID ranges).
 - **Warn only for recipes I can learn** (settings, off by default): warnings only for recipes the character can learn now or within +x skill points (default 10). A BoE recipe for a twink counts with the twink's skill.
 - **Event recipes**: recipes and vendors of world events (Feast of Winter Veil, Lunar Festival, Pilgrim's Bounty) no longer trigger warnings and are left out of the Hot and vendor lists while the event is not running (e.g. Seersa Copperpinch). The game calendar decides, the usual event dates are the fallback. The recipe details show "only during ...".
 - **Profession copilot**: a "Copilot" button above the profession window opens a panel beside it with every recipe of that profession, sorted by the skill needed to learn it.

@@ -86,6 +86,18 @@ function DB:AddVendor(npc, areaToUi)
     return v
 end
 
+-- Season of Discovery content is not part of WoW Forever, but the client and QuestieDB still carry
+-- some of it. Recipe spells: the AtlasLoot list plus the SoD spell range (Forever's own recipes start
+-- at 1229000); items: the SoD item range (Forever's own items start above 249000).
+function DB:IsSoDSpell(id)
+    if not id then return false end
+    return (ns.SoDRecipes and ns.SoDRecipes[id]) or (id >= 400000 and id < 1229000) or false
+end
+
+function DB:IsSoDItem(id)
+    return id ~= nil and id >= 200000 and id < 245000
+end
+
 -- Builds the extract in small slices so login does not stall.
 function DB:Build(onDone)
     if not self:QuestieAvailable() then
@@ -108,7 +120,7 @@ function DB:Build(onDone)
         local stop = math.min(i + SLICE - 1, n)
         for k = i, stop do
             local id = ids[k]
-            if ItemDB.class(id) == 9 then
+            if ItemDB.class(id) == 9 and not self:IsSoDItem(id) and not self:IsSoDItem(ns.RecipeProducts[id]) then
                 local sub = ItemDB.subClass(id)
                 local skill = self.SKILL_BY_SUBCLASS[sub]
                 if skill then
