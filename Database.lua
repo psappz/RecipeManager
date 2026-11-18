@@ -202,9 +202,27 @@ function DB:RestockSeconds(itemID, npc)
 end
 
 -- World events (client holiday id): calendar names to recognise them, and the usual dates as fallback
+-- (the Lunar Festival follows the lunar calendar: the fallback window is wide on purpose)
 DB.HOLIDAYS = {
     [141] = { key = "Feast of Winter Veil", words = { "winter veil", "winterhauch", "voile d'hiver", "invierno", "inverno" },
         from = { 12, 15 }, to = { 1, 2 } },
+    [327] = { key = "Lunar Festival", words = { "lunar festival", "mondfest", "fête lunaire", "festival lunar", "festa lunare" },
+        from = { 1, 20 }, to = { 2, 20 } },
+    [404] = { key = "Pilgrim's Bounty", words = { "pilgrim", "pilgerfreuden", "bienfaits du pèlerin", "generosidad", "abbondanza", "fartura" },
+        from = { 11, 21 }, to = { 11, 28 } },
+}
+
+-- Recipes that only come from a world event (event vendors, event gifts and quests), from the
+-- world event lists of AtlasLootClassic and later holiday recipes. Recipe item -> holiday id.
+DB.SEASONAL_RECIPES = {
+    -- Feast of Winter Veil
+    [17200] = 141, [17201] = 141, [17706] = 141, [17709] = 141, [17720] = 141, [17722] = 141, [17724] = 141, [17725] = 141,
+    [34261] = 141, [34319] = 141, [34413] = 141,
+    -- Lunar Festival (Coins of Ancestry)
+    [21722] = 327, [21723] = 327, [21724] = 327, [21725] = 327, [21726] = 327, [21727] = 327, [21728] = 327, [21729] = 327,
+    [21730] = 327, [21731] = 327, [21732] = 327, [21733] = 327, [21734] = 327, [21735] = 327, [21737] = 327, [21738] = 327,
+    -- Pilgrim's Bounty
+    [44858] = 404, [44859] = 404, [44860] = 404, [44861] = 404, [44862] = 404,
 }
 
 local holidayCache, calendarOpened = {}, false
@@ -262,9 +280,28 @@ function DB:HolidayActive(id)
     return on
 end
 
--- Seasonal vendor (only there during a world event): holiday id and whether it is running
+-- Seasonal recipe: holiday id and whether it is running
+function DB:RecipeSeason(itemID)
+    local id = itemID and self.SEASONAL_RECIPES[itemID]
+    if not id then return nil end
+    return id, self:HolidayActive(id)
+end
+
+-- Seasonal vendor (only there during a world event): known event NPC, or every recipe it sells
+-- belongs to the same event. Holiday id and whether it is running.
 function DB:VendorSeason(v)
-    local id = v and v.id and ns.SeasonalVendors and ns.SeasonalVendors[v.id]
+    if not v then return nil end
+    local id = v.id and ns.SeasonalVendors and ns.SeasonalVendors[v.id]
+    if not id and v.season == nil then
+        local h = false
+        for _, item in ipairs(v.recipes or {}) do
+            local r = self.SEASONAL_RECIPES[item]
+            if not r or (h and h ~= r) then h = false break end
+            h = r
+        end
+        v.season = h
+    end
+    id = id or v.season or nil
     if not id then return nil end
     return id, self:HolidayActive(id)
 end

@@ -441,7 +441,7 @@ function W:Table(parent, columns, rowHeight, visibleRows, onClick)
 
     function t:Render()
         for i, r in ipairs(self.rows) do
-            local item = self.data[i + self.offset]
+            local item = i <= self.visible and self.data[i + self.offset] or nil
             r.item = item
             if item then
                 r:Show()
@@ -460,6 +460,28 @@ function W:Table(parent, columns, rowHeight, visibleRows, onClick)
                 end
             else
                 r:Hide()
+            end
+        end
+    end
+
+    -- show fewer (or again all) of the rows that were built
+    function t:SetVisibleRows(n)
+        n = math.max(1, math.min(n, #self.rows))
+        if n == self.visible then return end
+        self.visible = n
+        self:SetHeight(self.rowHeight * (n + 1) + 4)
+        self.offset = math.min(self.offset, math.max(0, #self.data - n))
+        self:Render()
+    end
+
+    -- scroll so that the row with this item is visible
+    function t:ShowItem(pred)
+        for i, item in ipairs(self.data) do
+            if pred(item) then
+                if i <= self.offset then self.offset = i - 1
+                elseif i > self.offset + self.visible then self.offset = i - self.visible end
+                self:Render()
+                return
             end
         end
     end

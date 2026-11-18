@@ -456,7 +456,8 @@ local function renderDetail(page)
     local name, color = itemName(id)
     local tag = (s.limited and ("|cffff6a3d[" .. L["LIMITED SUPPLY"] .. "]|r ") or "") .. ((s.hot and s.bind ~= "BoP") and ("|cffffb100[" .. L["HOT"] .. "]|r ") or "")
     d.title:SetText(tag .. color .. name .. "|r")
-    d.meta:SetText(profName(rec.skillLine) .. " " .. (s.req or "?") .. "  -  " .. L[RM.Data:Rank(s.req) or "Apprentice"] .. "  -  " .. (s.bind or "") .. "  -  " .. s.color .. s.text .. "|r")
+    d.meta:SetText(profName(rec.skillLine) .. " " .. (s.req or "?") .. "  -  " .. L[RM.Data:Rank(s.req) or "Apprentice"] .. "  -  " .. (s.bind or "") .. "  -  " .. s.color .. s.text .. "|r"
+        .. (s.season and ("  -  |cffff9966" .. string.format(L["only during %s"], L[RM.Data.HOLIDAYS[s.season].key]) .. "|r") or ""))
 
     -- 1: crafting
     local c1 = {}

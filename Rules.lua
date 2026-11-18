@@ -47,6 +47,9 @@ function R:Status(itemID, npc)
         inScope = self:InScope(rec.skillLine),
     }
     s.known = s.mySkill and RM.Prof:Knows(itemID) or false
+    -- event recipes outside their event: not on sale, no warnings, not in the vendor lists
+    local season, running = RM.Data:RecipeSeason(itemID)
+    if season then s.season, s.offSeason = season, not running end
     if s.known then
         s.state, s.text, s.color = "known", L["known"], "|cff9d9d9d"
     elseif s.mySkill and (not s.req or s.mySkill >= s.req) then
@@ -84,6 +87,7 @@ end
 
 function R:ShouldWarn(s)
     local set = RM.settings
+    if s.offSeason then return false end
     if set.warnLearnableOnly and not self:LearnableSoon(s) then return false end
     -- a BoE recipe that one of my characters already has in bags, bank or mail is not worth a warning
     if set.skipOwned and s.bind == "BoE" and not s.known and RM.Int and RM.Int:Owned(s.id) then return false end

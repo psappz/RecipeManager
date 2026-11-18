@@ -16,7 +16,7 @@ local DIFF_ORDER = { red = 1, orange = 2, yellow = 3, green = 4, grey = 5 }
 local MAP_DIFF = { optimal = "orange", medium = "yellow", easy = "green", trivial = "grey", difficult = "red" }
 local SOURCE = {
     trainer = { "Trainer", "|cff6fa8ff" }, vendor = { "Vendor", "|cffffd100" }, drop = { "Drop", "|cffc080ff" },
-    world = { "World drop", "|cffc080ff" }, quest = { "Quest", "|cffe8e0c8" }, unknown = { "unknown", "|cff8a8270" },
+    world = { "World drop", "|cffc080ff" }, quest = { "Quest", "|cffe8e0c8" }, event = { "World event", "|cffff9966" }, unknown = { "unknown", "|cff8a8270" },
 }
 
 local function call(fn, ...)
@@ -160,8 +160,19 @@ local function windowRecipes()
                 if type(d) == "number" then d = ({ [0] = "optimal", [1] = "medium", [2] = "easy", [3] = "trivial" })[d] end
                 local src = craft and craft.src
                 if not src and not info.learned and C_TradeSkillUI.GetRecipeSourceText then src = call(C_TradeSkillUI.GetRecipeSourceText, rid) end
+                local rea = craft and craft.rea
+                if not rea and C_TradeSkillUI.GetRecipeSchematic then
+                    local sc = call(C_TradeSkillUI.GetRecipeSchematic, rid, false)
+                    if type(sc) == "table" and sc.reagentSlotSchematics then
+                        rea = {}
+                        for _, slot in ipairs(sc.reagentSlotSchematics) do
+                            local rg = slot.reagents and slot.reagents[1]
+                            if rg and rg.itemID then rea[rg.itemID] = slot.quantityRequired or 1 end
+                        end
+                    end
+                end
                 table.insert(list, { id = rid, name = info.name, learned = info.learned and true or false, out = out,
-                    diff = info.learned and MAP_DIFF[d] or nil, icon = info.icon, src = src })
+                    diff = info.learned and MAP_DIFF[d] or nil, icon = info.icon, src = src, rea = rea })
             end
         end
     elseif type(GetNumTradeSkills) == "function" then
@@ -191,7 +202,9 @@ function CP:Rows()
         local tLevel, tCost = self:TrainerSpell(r.id)
         local srcKind = sourceKind(r.src)
         local kind
+        local season = recipeItem and RM.Data:RecipeSeason(recipeItem)
         if t or tLevel then kind = "trainer"
+        elseif season then kind = "event"
         elseif rec and rec.vendors and #rec.vendors > 0 then kind = "vendor"
         elseif rec and rec.loot and rec.loot.w then kind = "world"
         elseif rec and ((rec.loot and (rec.loot.n or rec.loot.o or rec.loot.c)) or rec.drops) then kind = "drop"
@@ -209,7 +222,7 @@ function CP:Rows()
         local diff = r.diff or colorAt(lv, rank)
         if not r.learned and learnAt and rank < learnAt then diff = "red" end
         table.insert(rows, { id = r.id, name = r.name, learned = r.learned, out = r.out, lv = lv, learnAt = learnAt,
-            diff = diff, kind = kind, trainer = t, recipeItem = recipeItem, est = est, src = r.src })
+            diff = diff, kind = kind, trainer = t, season = season, recipeItem = recipeItem, est = est, src = r.src, rea = r.rea, icon = r.icon })
     end
     table.sort(rows, function(a, b)
         local x, y = a.learnAt or 999, b.learnAt or 999
@@ -259,8 +272,107 @@ local function tooltip(row)
         if rec and rec.loot and rec.loot.w then
             tt:AddLine(string.format(L["World drop (level %d-%d)"], rec.loot.w[1], rec.loot.w[2]), 0.8, 0.8, 0.8)
         end
-        if row.recipeItem then tt:AddLine(L["Click: open in RecipeManager"], 0.5, 0.8, 1) end
+        tt:AddLine(L["Click: details below"], 0.5, 0.8, 1)
     end
+end
+
+-- every detail of the selected recipe, as lines for the detail box
+local GREY = "|cff8a8270"
+local function itemName(id)
+    local n = C_Item and C_Item.GetItemNameByID and C_Item.GetItemNameByID(id)
+    if not n and GetItemInfo then n = GetItemInfo(id) end
+    return n or ("#" .. id)
+end
+local function npcName(id)
+    local ok, n = pcall(function() return NpcDB.name(id) end)
+    return ok and n or ("#" .. id)
+end
+local function pct(c)
+    if not c then return "" end
+    local t = c >= 1 and string.format("%.1f", c) or string.format("%.2f", c)
+    t = t:gsub("0+$", ""):gsub("%.$", "")
+    if GetLocale() ~= "enUS" and GetLocale() ~= "enGB" then t = t:gsub("%.", ",") end
+    return t .. " %"
+end
+
+function CP:DetailLines(row)
+    local out = {}
+    local function add(t) table.insert(out, t) end
+    local c = row.diff and DIFF_COLOR[row.diff]
+    -- levels and colour now
+    if row.lv then
+        local lv = row.lv
+        local parts = {
+            (row.est and "~" or "") .. string.format(L["Learn at %d"], lv[1]),
+            hex(DIFF_COLOR.yellow) .. L["DIFF_yellow"] .. " " .. lv[2] .. "|r",
+            hex(DIFF_COLOR.green) .. L["DIFF_green"] .. " " .. lv[3] .. "|r",
+            hex(DIFF_COLOR.grey) .. L["DIFF_grey"] .. " " .. lv[4] .. "|r",
+        }
+        add(table.concat(parts, "  -  "))
+    elseif row.learnAt then
+        add(string.format(L["Learn at %d"], row.learnAt))
+    else
+        add(GREY .. L["Skill-up levels unknown (Forever recipe?)"] .. "|r")
+    end
+    add(L["Now"] .. ": " .. (c and (hex(c) .. L["DIFF_" .. row.diff] .. "|r") or (GREY .. "?|r"))
+        .. (row.learned and ("   |cff7ad07a" .. L["known"] .. "|r") or ""))
+    -- source
+    local src = SOURCE[row.kind]
+    local rec = row.recipeItem and RM.Data.recipes[row.recipeItem]
+    local line = L["Source"] .. ": " .. src[2] .. L[src[1]] .. "|r"
+    local npc, point
+    if row.trainer then
+        local who = row.trainer.trainer and (row.trainer.trainer .. " " .. GREY .. (row.trainer.zone or "") .. "|r") or L["any profession trainer"]
+        line = line .. "  " .. who .. (row.trainer.cost and row.trainer.cost > 0 and ("  " .. RM:Money(row.trainer.cost)) or "")
+    elseif row.season then
+        local h = RM.Data.HOLIDAYS[row.season]
+        local _, running = RM.Data:RecipeSeason(row.recipeItem)
+        line = line .. "  " .. string.format(L["only during %s"], L[h.key])
+            .. (running and ("  |cff7ad07a" .. L["running now"] .. "|r") or "")
+    end
+    if rec and rec.vendors and #rec.vendors > 0 and (not row.trainer) then
+        if row.season then add(line) line = "    " end
+        local dist
+        if RM.UI and RM.UI.BestVendor then npc, point, dist = RM.UI.BestVendor(rec) end
+        local v = npc and RM.Data.vendors[npc]
+        if v then
+            local zone = RM.UI and RM.UI.ZoneName and point and RM.UI.ZoneName(point[1]) or ""
+            local st = RM.Rules:Status(row.recipeItem, npc)
+            line = line .. "  " .. v.name .. " " .. GREY .. zone .. "|r" .. (dist and ("  " .. RM:FormatDistance(dist)) or "")
+                .. (st and st.vendorPrice and ("  " .. RM:Money(st.vendorPrice)) or "")
+            if st and st.limited then line = line .. "  |cffff6a3d" .. L["LIMITED"] .. "|r" end
+        else
+            local first = RM.Data.vendors[rec.vendors[1]]
+            local _, why = RM.Data:VendorAllowed(first)
+            local season = why == "season" and RM.Data.HOLIDAYS[RM.Data:VendorSeason(first)]
+            line = line .. "  " .. (first and first.name or "?") .. "  " .. GREY
+                .. (season and string.format(L["only during %s"], L[season.key]) or L["other faction"]) .. "|r"
+        end
+    elseif rec and rec.loot and rec.loot.w then
+        line = line .. "  " .. string.format(L["World drop (level %d-%d)"], rec.loot.w[1], rec.loot.w[2])
+    end
+    add(line)
+    if rec and rec.loot and rec.loot.n and not rec.loot.w then
+        local drops = {}
+        for i = 1, math.min(3, #rec.loot.n) do
+            local e = rec.loot.n[i]
+            table.insert(drops, npcName(e[1]) .. " " .. GREY .. pct(e[2]) .. "|r")
+        end
+        add("    " .. table.concat(drops, ", "))
+    end
+    if row.kind == "unknown" and row.src then add(GREY .. row.src:gsub("\n", "  ") .. "|r") end
+    -- reagents with what the character has (bags and bank)
+    if row.rea and next(row.rea) then
+        local parts = {}
+        for id, n in pairs(row.rea) do
+            local have = GetItemCount and GetItemCount(id, true) or 0
+            local col = have >= n and "|cff7ad07a" or "|cffd0a060"
+            table.insert(parts, n .. "x " .. itemName(id) .. " " .. col .. "(" .. have .. ")|r")
+        end
+        table.sort(parts)
+        add(L["Reagents"] .. ": " .. table.concat(parts, ", "))
+    end
+    return out, npc, point
 end
 
 function CP:Build(host)
@@ -276,70 +388,121 @@ function CP:Build(host)
     p.info:SetPoint("TOPLEFT", 10, -26)
     p.showLearned = W:Check(p, L["show learned"], function() return RM.settings.copilotLearned end,
         function(v) RM.settings.copilotLearned = v CP:Refresh() end)
-    p.showLearned:SetPoint("TOPRIGHT", -90, -6)
-    p.close = W:Button(p, "x", 20, function() RM.settings.copilot = false CP:Refresh() end)
-    p.close:SetPoint("TOPRIGHT", -6, -6)
-    local legend = {}
-    for _, k in ipairs({ "red", "orange", "yellow", "green", "grey" }) do table.insert(legend, square(DIFF_COLOR[k]) .. " " .. L["DIFF_" .. k]) end
-    p.legend = W:Text(p, "GameFontDisableSmall", table.concat(legend, "  "))
-    p.legend:SetPoint("BOTTOMLEFT", 10, 8)
-    local rows = math.max(6, math.floor((host:GetHeight() - 100) / 20))
+    p.showLearned:SetPoint("TOPRIGHT", -110, -8)
+
+    -- colour legend at the bottom: a click hides or shows the recipes of that colour
+    p.legend = {}
+    local prev
+    for _, k in ipairs({ "red", "orange", "yellow", "green", "grey" }) do
+        local b = CreateFrame("Button", nil, p)
+        b.text = W:Text(b, "GameFontHighlightSmall", square(DIFF_COLOR[k]) .. " " .. L["DIFF_" .. k])
+        b.text:SetPoint("LEFT")
+        b:SetSize(b.text:GetStringWidth() + 4, 16)
+        if prev then b:SetPoint("LEFT", prev, "RIGHT", 10, 0) else b:SetPoint("BOTTOMLEFT", 10, 6) end
+        b:SetScript("OnClick", function()
+            local hide = RM.settings.copilotHide
+            hide[k] = not hide[k] or nil
+            CP:Refresh()
+        end)
+        b:SetScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, "ANCHOR_TOP")
+            GameTooltip:AddLine(L["DIFF_" .. k], 1, 0.82, 0)
+            GameTooltip:AddLine(L["Click: show or hide these recipes"], 1, 1, 1, true)
+            GameTooltip:Show()
+        end)
+        b:SetScript("OnLeave", function() GameTooltip:Hide() end)
+        p.legend[k] = b
+        prev = b
+    end
+
+    p.totalRows = math.max(6, math.floor((host:GetHeight() - 100) / 20))
     p.table = W:Table(p, {
         { "dot", "", 18, "CENTER" }, { "skill", L["Skill"], 40, "RIGHT", L["TIP_COPILOT_SKILL"] },
         { "name", L["Recipe"], 214, nil }, { "source", L["Source"], 92, nil, L["TIP_COPILOT_SOURCE"] },
-    }, 20, rows, function(item)
-        if item.recipeItem and RM.UI then RM.UI:SelectRecipe(item.recipeItem, item.npc) end
-    end)
+    }, 20, p.totalRows, function(item) CP:Select(item.row) end)
     p.table:SetPoint("TOPLEFT", 4, -44)
     p.table:SetPoint("RIGHT", -4, 0)
+
+    -- detail box of the selected recipe (lower third)
+    local d = W:Panel(p, 0.04, 0.035, 0.02, 1)
+    d:SetBackdropBorderColor(0.4, 0.33, 0.2, 1)
+    d:SetPoint("TOPLEFT", p.table, "BOTTOMLEFT", 2, -4)
+    d:SetPoint("RIGHT", p, "RIGHT", -6, 0)
+    d:SetPoint("BOTTOM", p, "BOTTOM", 0, 26)
+    d.icon = d:CreateTexture(nil, "ARTWORK")
+    d.icon:SetSize(18, 18)
+    d.icon:SetPoint("TOPLEFT", 8, -7)
+    d.title = W:Text(d, "GameFontNormal")
+    d.title:SetPoint("LEFT", d.icon, "RIGHT", 6, 0)
+    d.title:SetPoint("RIGHT", d, "RIGHT", -8, 0)
+    d.title:SetJustifyH("LEFT")
+    d.title:SetWordWrap(false)
+    d.text = W:Text(d, "GameFontHighlightSmall")
+    d.text:SetPoint("TOPLEFT", 8, -30)
+    d.text:SetPoint("RIGHT", d, "RIGHT", -8, 0)
+    d.text:SetPoint("BOTTOM", d, "BOTTOM", 0, 32)
+    d.text:SetJustifyH("LEFT")
+    d.text:SetJustifyV("TOP")
+    d.text:SetSpacing(3)
+    d.open = W:Button(d, L["Open in RecipeManager"], 150, function()
+        if d.row and d.row.recipeItem and RM.UI then RM.UI:SelectRecipe(d.row.recipeItem, d.npc, d.point) end
+    end)
+    d.open:SetPoint("BOTTOMRIGHT", -6, 6)
+    d.way = W:Button(d, L["Show the way"], 110, function()
+        if d.npc and d.point and RM.Arrow then RM.Arrow:Point(d.npc, d.point, { d.row.recipeItem }) end
+    end)
+    d.way:SetPoint("RIGHT", d.open, "LEFT", -6, 0)
+    d:Hide()
+    p.detail = d
     p.host = host
     return p
 end
 
--- tabs and other pieces that stick out on the right of the profession window (side tabs of the
--- window itself or of other addons): the panel goes right of them
-local function rightOverhang(host)
-    local right = host:GetRight()
-    if not right then return 0 end
-    local scale = host:GetEffectiveScale()
-    local m = 0
-    local function check(f)
-        if f == host.rmCopilot or f == host.rmCopilotButton or not f:IsShown() then return end
-        local r, top, bottom = f:GetRight(), f:GetTop(), f:GetBottom()
-        if not (r and top and bottom) then return end
-        r = r * f:GetEffectiveScale() / scale
-        local over = r - right
-        -- only things beside the window, not tooltips or frames that just happen to be parented here
-        if over > m and over < 90 and (f:GetWidth() or 0) < 120 then m = over end
+-- click on a recipe: details below, the list shrinks to about two thirds; a second click closes them
+function CP:Select(row)
+    local p = self.panel
+    if not p then return end
+    if not row or (self.selected == row.id) then
+        self.selected = nil
+    else
+        self.selected = row.id
     end
-    for _, c in ipairs({ host:GetChildren() }) do check(c) end
-    for _, name in ipairs({ "ProfessionsFrameTab", "TradeSkillFrameTab", "SpellBookSkillLineTab" }) do
-        for i = 1, 12 do
-            local f = _G[name .. i]
-            if f and f.GetParent and f:IsShown() then
-                local par, near = f:GetParent(), false
-                while par do if par == host then near = true break end par = par:GetParent() end
-                if near then check(f) end
-            end
-        end
-    end
-    return m
+    self:Refresh()
 end
 
-function CP:Place(p, host)
-    local x = math.floor(rightOverhang(host) + 0.5) + 4
-    if p.placedX == x then return end
-    p.placedX = x
-    p:ClearAllPoints()
-    p:SetPoint("TOPLEFT", host, "TOPRIGHT", x, 0)
-    p:SetPoint("BOTTOMLEFT", host, "BOTTOMRIGHT", x, 0)
+function CP:ShowDetail(row)
+    local p = self.panel
+    local d = p.detail
+    if not row then
+        d:Hide()
+        p.table:SetVisibleRows(p.totalRows)
+        return
+    end
+    p.table:SetVisibleRows(math.max(4, math.floor(p.totalRows * 2 / 3)))
+    local c = row.diff and DIFF_COLOR[row.diff] or DIFF_COLOR.grey
+    d.row = row
+    d.icon:SetTexture(row.icon or "Interface\\Icons\\INV_Misc_QuestionMark")
+    d.title:SetText(hex(c) .. row.name .. "|r")
+    local lines, npc, point = self:DetailLines(row)
+    d.text:SetText(table.concat(lines, "\n"))
+    d.npc, d.point = npc, point
+    d.open:SetShown(row.recipeItem ~= nil)
+    d.way:SetShown(npc ~= nil and point ~= nil)
+    if not d.open:IsShown() then
+        d.way:ClearAllPoints()
+        d.way:SetPoint("BOTTOMRIGHT", -6, 6)
+    else
+        d.way:ClearAllPoints()
+        d.way:SetPoint("RIGHT", d.open, "LEFT", -6, 0)
+    end
+    d:Show()
 end
 
 function CP:Refresh()
     local host = profFrame()
     if not host then return end
     if not host.rmCopilotButton then
-        local b = RM.W:Button(host, L["Copilot"], 80, function()
+        local b = RM.W:Button(host, L["RecipeManager Copilot"], 160, function()
             RM.settings.copilot = not RM.settings.copilot
             CP:Refresh()
         end)
@@ -351,34 +514,46 @@ function CP:Refresh()
         if host.rmCopilot then host.rmCopilot:Hide() end
         return
     end
+    RM.settings.copilotHide = RM.settings.copilotHide or {}
+    local hide = RM.settings.copilotHide
     local p = host.rmCopilot or self:Build(host)
     host.rmCopilot = p
+    self.panel = p
     self:Place(p, host)
     p:Show()
     local list, lineName, rank = self:Rows()
-    local data, learnable, total = {}, 0, 0
+    local data, learnable, total, hidden, sel = {}, 0, 0, 0, nil
     for _, r in ipairs(list) do
         total = total + 1
         if not r.learned and r.learnAt and r.diff ~= "red" then learnable = learnable + 1 end
         if RM.settings.copilotLearned or not r.learned then
-            local c = DIFF_COLOR[r.diff or "grey"] or DIFF_COLOR.grey
-            local s = SOURCE[r.kind]
-            local npc = r.recipeItem and RM.Data.recipes[r.recipeItem] and RM.Data.recipes[r.recipeItem].vendors and RM.Data.recipes[r.recipeItem].vendors[1]
-            table.insert(data, {
-                dot = r.diff and square(c) or "",
-                skill = r.learnAt and (hex(c) .. (r.est and "~" or "") .. r.learnAt .. "|r") or "|cff8a8270?|r",
-                name = (r.learned and "|cff9d9d9d" or "|cffffffff") .. r.name .. "|r" .. (r.learned and " |cff7ad07a(" .. L["known"] .. ")|r" or ""),
-                source = s[2] .. L[s[1]] .. "|r",
-                sortValues = { skill = r.learnAt or 999, dot = DIFF_ORDER[r.diff or "grey"] },
-                recipeItem = r.recipeItem, npc = npc,
-                onTooltip = tooltip(r),
-            })
+            if r.diff and hide[r.diff] then
+                hidden = hidden + 1
+            else
+                local c = DIFF_COLOR[r.diff or "grey"] or DIFF_COLOR.grey
+                local s = SOURCE[r.kind]
+                if r.id == self.selected then sel = r end
+                table.insert(data, {
+                    dot = r.diff and square(c) or "",
+                    skill = r.learnAt and (hex(c) .. (r.est and "~" or "") .. r.learnAt .. "|r") or "|cff8a8270?|r",
+                    name = (r.learned and "|cff9d9d9d" or "|cffffffff") .. r.name .. "|r" .. (r.learned and " |cff7ad07a(" .. L["known"] .. ")|r" or ""),
+                    source = s[2] .. L[s[1]] .. "|r",
+                    sortValues = { skill = r.learnAt or 999, dot = DIFF_ORDER[r.diff or "grey"] },
+                    row = r, selected = r.id == self.selected,
+                    onTooltip = tooltip(r),
+                })
+            end
         end
     end
+    if not sel then self.selected = nil end
+    for k, b in pairs(p.legend) do b:SetAlpha(hide[k] and 0.35 or 1) end
     p.title:SetText(L["Copilot"] .. " - " .. (lineName or "?") .. " " .. rank)
-    p.info:SetText(string.format(L["%d of %d recipes learnable now"], learnable, total))
+    p.info:SetText(string.format(L["%d of %d recipes learnable now"], learnable, total)
+        .. (hidden > 0 and ("  |cff8a8270(" .. string.format(L["%d hidden"], hidden) .. ")|r") or ""))
     p.showLearned:Refresh()
+    self:ShowDetail(sel)
     p.table:SetData(data)
+    if sel then p.table:ShowItem(function(item) return item.row == sel end) end
 end
 
 local pending

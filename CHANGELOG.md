@@ -4,7 +4,7 @@
 
 ### New
 - **Warn only for recipes I can learn** (settings, off by default): warnings only for recipes the character can learn now or within +x skill points (default 10). A BoE recipe for a twink counts with the twink's skill.
-- **Seasonal vendors**: event-only recipe vendors (Feast of Winter Veil: Seersa Copperpinch, Khole Jinglepocket and others) no longer trigger warnings and are left out of the Hot and vendor lists while the event is not running. The game calendar decides, the usual event dates are the fallback.
+- **Event recipes**: recipes and vendors of world events (Feast of Winter Veil, Lunar Festival, Pilgrim's Bounty) no longer trigger warnings and are left out of the Hot and vendor lists while the event is not running (e.g. Seersa Copperpinch). The game calendar decides, the usual event dates are the fallback. The recipe details show "only during ...".
 - **Profession copilot**: a "Copilot" button above the profession window opens a panel beside it with every recipe of that profession, sorted by the skill needed to learn it.
   - Colour square and skill number show what the recipe is for you now: red (not learnable yet), orange, yellow, green, grey.
   - Source in colour: trainer (blue), vendor (gold), drop and world drop (purple), quest (white).
@@ -14,6 +14,9 @@
 - Trainer recipes with required skill and cost from CMaNGOS classic-db; Season-of-Discovery recipes get an estimated learn level (shown as "~").
 - Recipes without database entry take their source from the game client's own source text.
 - The panel sits right of the profession window's side tabs instead of covering them.
+- Button "RecipeManager Copilot" shows and hides the panel (no close button any more).
+- Click a colour in the legend to hide or show the recipes of that colour (e.g. no grey ones).
+- Click a recipe: the list shrinks to two thirds and a detail box below shows skill-up levels, source (trainer and cost, nearest vendor with distance and price, drops, event), reagents with what you have, and buttons to open it in RecipeManager or show the way. Click it again to close.
 
 ## 1.4.1
 

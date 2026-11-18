@@ -145,7 +145,7 @@ local function hotRows()
             local npc, point, dist = bestVendor(rec)
             if npc then
                 local s = RM.Rules:Status(id, npc)
-                if s and (not hotFilter.onlyHot or s.hot) and (not hotFilter.onlyLimited or s.limited)
+                if s and not s.offSeason and (not hotFilter.onlyHot or s.hot) and (not hotFilter.onlyLimited or s.limited)
                     and (not hotFilter.onlyForever or rec.learned) then
                     local name, color = itemName(id)
                     local v = RM.Data.vendors[npc]
