@@ -2,6 +2,9 @@
 -- watchlist and a detailed recipe panel. Window size is fixed (980 x 560); lists scroll inside.
 -- Copyright (C) 2026 psappz - GPL-3.0-or-later
 local _, ns = ...
+-- QuestieDB entities (resolved in Database.lua; the ItemDB/NpcDB globals can be taken by other addons)
+ns.Q = ns.Q or {}
+local Q = ns.Q
 local RM = ns.RM
 local L = ns.L
 local W = RM.W
@@ -110,11 +113,11 @@ end
 
 -- QuestieDB names and zones for loot sources
 local function npcName(id)
-    local ok, n = pcall(NpcDB.name, id)
+    local ok, n = pcall(Q.Npc.name, id)
     return ok and n or ("#" .. id)
 end
 local function objectName(id)
-    local ok, n = pcall(ObjectDB.name, id)
+    local ok, n = pcall(Q.Object.name, id)
     return ok and n or ("#" .. id)
 end
 local function areaName(db, id)
@@ -141,7 +144,7 @@ local function lootSource(rec, kind)
     elseif kind == "mob" then
         local first = l.n and l.n[1]
         if first then
-            local z = areaName(NpcDB, first[1])
+            local z = areaName(Q.Npc, first[1])
             return npcName(first[1]) .. (z and (" " .. GREY .. z .. "|r") or "") .. ((#l.n > 1) and (GREY .. " +" .. (#l.n - 1) .. "|r") or "")
         end
         return GREY .. L["Loot: creature"] .. "|r"
@@ -516,12 +519,12 @@ local function renderDetail(page)
         local shown = 0
         for _, e in ipairs(l and l.n or {}) do
             if shown >= (l.w and 1 or 3) then break end
-            local z = areaName(NpcDB, e[1])
+            local z = areaName(Q.Npc, e[1])
             table.insert(c2, npcName(e[1]) .. (z and (" " .. GREY .. z .. "|r") or "") .. "  " .. GREY .. pct(e[2]) .. "|r")
             shown = shown + 1
         end
         if l and l.o and l.o[1] and shown < 3 then
-            local z = areaName(ObjectDB, l.o[1][1])
+            local z = areaName(Q.Object, l.o[1][1])
             table.insert(c2, L["Chest"] .. ": " .. objectName(l.o[1][1]) .. (z and (" " .. GREY .. z .. "|r") or "") .. "  " .. GREY .. pct(l.o[1][2]) .. "|r")
             shown = shown + 1
         end

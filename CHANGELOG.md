@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.5.1
+
+### Fixed
+- Error "Database.lua:115: attempt to call a nil value" at login, which left RecipeManager inactive: another addon used the global name ItemDB. RecipeManager now takes the QuestieDB tables from LibQuestieDB and only falls back to the globals when they really are QuestieDB's.
+
 ## 1.5.0
 
 ### New

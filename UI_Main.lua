@@ -1,6 +1,9 @@
 -- RecipeManager - main dialog: tabs Hot and Vendor recipes (settings in UI_Settings.lua)
 -- Copyright (C) 2026 psappz - GPL-3.0-or-later
 local _, ns = ...
+-- QuestieDB entities (resolved in Database.lua; the ItemDB/NpcDB globals can be taken by other addons)
+ns.Q = ns.Q or {}
+local Q = ns.Q
 local RM = ns.RM
 local L = ns.L
 local W = RM.W
@@ -29,8 +32,8 @@ end
 RM:On("GET_ITEM_INFO_RECEIVED", function() retries = 0 end)
 
 local function questieName(id)
-    if type(ItemDB) ~= "table" or type(ItemDB.name) ~= "function" then return nil end
-    local ok, n = pcall(ItemDB.name, id)
+    if type(Q.Item) ~= "table" or type(Q.Item.name) ~= "function" then return nil end
+    local ok, n = pcall(Q.Item.name, id)
     if ok and type(n) == "string" and n ~= "" then return n end
 end
 

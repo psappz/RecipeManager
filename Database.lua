@@ -1,6 +1,9 @@
 -- RecipeManager - Database: recipe extract from QuestieDB, Limited Supply list, learned vendors
 -- Copyright (C) 2026 psappz - GPL-3.0-or-later
 local _, ns = ...
+-- QuestieDB entities (resolved in Database.lua; the ItemDB/NpcDB globals can be taken by other addons)
+ns.Q = ns.Q or {}
+local Q = ns.Q
 local RM = ns.RM
 local L = ns.L
 
@@ -33,7 +36,7 @@ DB.vendorsByMap = {}   -- [uiMapID] = { npcID, ... }
 DB.ready = false
 
 local function isRepVendor(npc)
-    local sub = NpcDB.GetRaw and NpcDB.GetRaw(npc, "subName") or NpcDB.subName(npc)
+    local sub = Q.Npc.GetRaw and Q.Npc.GetRaw(npc, "subName") or Q.Npc.subName(npc)
     if type(sub) ~= "string" then return false end
     for _, p in ipairs(REP_PATTERNS) do
         if sub:find(p, 1, true) then return true end
@@ -42,7 +45,9 @@ local function isRepVendor(npc)
 end
 
 local function loadAreaToUiMap()
-    local ok, zdb = pcall(LibQuestieDB.Support.Get, "ZoneDB")
+    local support = LibQuestieDB.Support
+    if type(support) ~= "table" or type(support.Get) ~= "function" then return {} end
+    local ok, zdb = pcall(support.Get, "ZoneDB")
     if not ok or not zdb or not zdb.private then return {} end
     local m = zdb.private.areaIdToUiMapId
     if type(m) == "string" then
@@ -53,17 +58,28 @@ local function loadAreaToUiMap()
     return type(m) == "table" and m or {}
 end
 
+-- Picks the QuestieDB entities: LibQuestieDB.Item etc. first, the ItemDB/NpcDB/... globals only as a
+-- fallback, and only when they really are QuestieDB's (another addon may use the same global names).
+local function entity(name)
+    local lib = type(LibQuestieDB) == "table" and LibQuestieDB[name]
+    if type(lib) == "table" and type(lib.GetAllIds) == "function" then return lib end
+    local g = _G[name .. "DB"]
+    if type(g) == "table" and type(g.GetAllIds) == "function" then return g end
+end
+
 function DB:QuestieAvailable()
-    return type(LibQuestieDB) == "table" and type(ItemDB) == "table" and type(NpcDB) == "table"
+    if type(LibQuestieDB) ~= "table" then return false end
+    for _, name in ipairs({ "Item", "Npc", "Object", "Quest" }) do Q[name] = entity(name) end
+    return Q.Item ~= nil and Q.Npc ~= nil
 end
 
 function DB:AddVendor(npc, areaToUi)
     if self.vendors[npc] then return self.vendors[npc] end
-    local spawns = NpcDB.spawns(npc)
+    local spawns = Q.Npc.spawns(npc)
     local v = {
         id = npc,
-        name = NpcDB.name(npc) or ("NPC " .. npc),
-        faction = NpcDB.friendlyToFaction(npc),
+        name = Q.Npc.name(npc) or ("NPC " .. npc),
+        faction = Q.Npc.friendlyToFaction(npc),
         rep = isRepVendor(npc),
         points = {},
         recipes = {},
@@ -112,7 +128,7 @@ function DB:Build(onDone)
         end
     end
     local areaToUi = loadAreaToUiMap()
-    local ids = ItemDB.GetAllIds()
+    local ids = Q.Item.GetAllIds()
     local i, n = 1, #ids
     local SLICE = 400
     local ticker
@@ -120,16 +136,16 @@ function DB:Build(onDone)
         local stop = math.min(i + SLICE - 1, n)
         for k = i, stop do
             local id = ids[k]
-            if ItemDB.class(id) == 9 and not self:IsSoDItem(id) and not self:IsSoDItem(ns.RecipeProducts[id]) then
-                local sub = ItemDB.subClass(id)
+            if Q.Item.class(id) == 9 and not self:IsSoDItem(id) and not self:IsSoDItem(ns.RecipeProducts[id]) then
+                local sub = Q.Item.subClass(id)
                 local skill = self.SKILL_BY_SUBCLASS[sub]
                 if skill then
                     local rec = {
                         id = id,
                         skillLine = skill,
-                        vendors = ItemDB.vendors(id),
-                        quests = ItemDB.questRewards(id),
-                        drops = ItemDB.npcDrops(id),
+                        vendors = Q.Item.vendors(id),
+                        quests = Q.Item.questRewards(id),
+                        drops = Q.Item.npcDrops(id),
                         limited = ns.LimitedSupply[id],
                         product = ns.RecipeProducts[id],
                         loot = ns.LootSources and ns.LootSources[id],

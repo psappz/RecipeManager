@@ -3,6 +3,9 @@
 -- (trainer, vendor, drop, quest) and its colour at your current skill (red, orange, yellow, green, grey).
 -- Copyright (C) 2026 psappz - GPL-3.0-or-later
 local _, ns = ...
+-- QuestieDB entities (resolved in Database.lua; the ItemDB/NpcDB globals can be taken by other addons)
+ns.Q = ns.Q or {}
+local Q = ns.Q
 local RM = ns.RM
 local L = ns.L
 
@@ -289,7 +292,7 @@ local function itemName(id)
     return n or ("#" .. id)
 end
 local function npcName(id)
-    local ok, n = pcall(function() return NpcDB.name(id) end)
+    local ok, n = pcall(function() return Q.Npc.name(id) end)
     return ok and n or ("#" .. id)
 end
 local function pct(c)
