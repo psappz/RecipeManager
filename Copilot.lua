@@ -246,7 +246,7 @@ end
 local function profFrame()
     for _, name in ipairs({ "ProfessionsFrame", "TradeSkillFrame", "CraftFrame" }) do
         local f = _G[name]
-        if f and f:IsShown() then return f end
+        if type(f) == "table" and type(f.IsShown) == "function" and f:IsShown() then return f end
     end
 end
 
