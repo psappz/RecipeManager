@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.5.2
+
+- In-game addon list: the addon now has a category, so it is grouped with similar addons (translated into the six interface languages). The copilot only accepts real frames as the profession window.
+
 ## 1.5.1
 
 ### Fixed
