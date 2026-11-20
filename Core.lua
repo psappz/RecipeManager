@@ -126,8 +126,42 @@ function RM:InitDB()
     self.realm = r
     self.char = c
     self.realmName = realm
-    self.playerName = UnitName("player")
+    self.playerName = RM:FullName()
     self.faction = UnitFactionGroup("player")
+    self:MigrateCharKey()
+end
+
+-- WoW Forever: characters have a first name and a surname (UnitName returns both), and two
+-- characters may share the first name. Characters are kept as "First Surname".
+function RM:FullName()
+    local name, surname = UnitName("player")
+    if type(surname) == "string" and surname ~= "" then return name .. " " .. surname end
+    return name
+end
+
+-- A sender "First-Surname[-Realm]" (addon messages) as "First Surname"
+function RM:SenderName(sender)
+    local first, second = (sender or ""):match("^([^-]+)%-?([^-]*)")
+    if not first then return sender end
+    if second ~= "" and RM.playerName and RM.playerName:find(" ", 1, true) then return first .. " " .. second end
+    return first
+end
+
+-- Up to 1.5.2 characters were stored by first name only, so two characters with the same first
+-- name shared one entry. The old entry goes to this character if level and class match,
+-- otherwise it is dropped (the right character records itself again).
+function RM:MigrateCharKey()
+    local first = UnitName("player")
+    local chars = self.realm and self.realm.chars
+    if not chars or not first or first == self.playerName then return end
+    local old = chars[first]
+    if not old then return end
+    chars[first] = nil
+    if chars[self.playerName] then return end
+    local _, class = UnitClass("player")
+    if old.level == UnitLevel("player") and (not old.class or old.class == class) then
+        chars[self.playerName] = old
+    end
 end
 
 ---------------------------------------------------------------------------

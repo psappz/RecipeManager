@@ -101,8 +101,8 @@ end
 
 RM:On("CHAT_MSG_ADDON", function(_, prefix, msg, channel, sender)
     if prefix ~= PREFIX or channel ~= "GUILD" or not (RM.settings and RM.settings.shareGuild) then return end
-    local who = (sender or ""):match("^[^-]+")
-    if who == UnitName("player") then return end
+    local who = RM:SenderName(sender)
+    if who == RM.playerName then return end
     local kind, body = strsplit("|", msg, 2)
     local store = guildStore()
     if kind == "Q" then

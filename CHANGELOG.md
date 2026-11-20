@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.5.3
+
+### Fixed
+- Characters are stored with first name and surname. Two characters with the same first name (e.g. "Monaco Stenz" and "Monaco Bank") overwrote each other's professions and twink settings. The old entry is taken over by the character it belongs to (same level and class), otherwise it is recorded again on the next login.
+
 ## 1.5.2
 
 - In-game addon list: the addon now has a category, so it is grouped with similar addons (translated into the six interface languages). The copilot only accepts real frames as the profession window.
