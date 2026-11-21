@@ -132,13 +132,20 @@ function M:AutoBuy()
         if self.highlight[i] == "stock" and not self.bop[i] then
             local id = C_Item.GetItemInfoInstant(GetMerchantItemLink(i) or "")
             local _, price, _, avail, extended = itemInfo(i)
+            -- a bind-on-pickup recipe is learned once: at most one, and none if already known or in the bags
+            local limit = maxQty
+            local info = id and RM.Data:RecipeInfo(id)
+            if info and info.bind == "BoP" then
+                local known = RM.Prof.Knows and RM.Prof:Knows(id)
+                limit = (known or (GetItemCount and GetItemCount(id, true) or 0) > 0) and 0 or 1
+            end
             if id and watch[id] and not extended and price and price <= maxPrice and (avail or 0) > 0
-                and (autoBought[id] or 0) < maxQty and GetMoney() >= price then
+                and (autoBought[id] or 0) < limit and GetMoney() >= price then
                 autoBought[id] = (autoBought[id] or 0) + 1
                 autoPending = GetTime()
                 rawBuy(i, 1)
                 RM:Print(string.format(L["Bought automatically: %s for %s (%d/%d)"],
-                    (RM.UI.ItemName(id)), RM:Money(price), autoBought[id], maxQty))
+                    (RM.UI.ItemName(id)), RM:Money(price), autoBought[id], limit))
                 return
             end
         end
