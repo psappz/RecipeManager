@@ -52,6 +52,10 @@ function UnitLevel() return 30 end
 function UnitClass() return "Krieger", "WARRIOR" end
 function InCombatLockdown() return false end
 function hooksecurefunc() end
+BUY_LOG = {}
+function BuyMerchantItem(i, q) table.insert(BUY_LOG, i) end
+StaticPopupDialogs = {}
+YES = "Ja" NO = "Nein"
 function GetAddOnMetadata() return "1.4.1" end
 C_AddOns = { GetAddOnMetadata = function() return "1.4.1" end }
 SOUNDKIT = {}

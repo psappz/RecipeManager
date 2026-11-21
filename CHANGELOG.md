@@ -6,6 +6,7 @@
 - The vendor warning names hot Limited Supply recipes with the margin expected now (up to two, the best first), e.g. "HOT Limited Supply: Pattern: Mooncloth Boots (~30g)".
 - "BUY NOW" also says when the recipe is hot and which margin to expect.
 - Merchant window: Limited Supply recipes are tinted and framed, orange while in stock, grey when sold out.
+- Merchant window: bind-on-pickup recipes of a profession your character does not have are marked red, and RecipeManager asks before you buy one.
 
 ## 1.5.3
 

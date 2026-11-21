@@ -8,7 +8,8 @@ local M = {}
 RM.Merchant = M
 
 local alarmed = {} -- [npc..":"..item] = time (one alarm per vendor visit)
-M.highlight = {}   -- [merchantIndex] = "stock" (Limited Supply in stock) or "out" (sold out)
+M.highlight = {}   -- [merchantIndex] = "stock" (Limited Supply in stock), "out" (sold out) or "bop"
+M.bop = {}         -- [merchantIndex] = { id, skill }: bind-on-pickup recipe of a profession this character lacks
 
 local function npcIdFromGuid(guid)
     if not guid then return nil end
@@ -35,6 +36,7 @@ function M:Scan()
     local foundRecipe, favor = false, false
     local alarms = {}
     wipe(self.highlight)
+    wipe(self.bop)
     for i = 1, GetMerchantNumItems() do
         local link = GetMerchantItemLink(i)
         local id, _, _, _, _, classID, subClassID = C_Item.GetItemInfoInstant(link or "")
@@ -55,7 +57,14 @@ function M:Scan()
                     if avail > 0 then o.lastAvail = now else o.lastSoldOut = now end
                 end
                 obs[id] = o
-                if o.limited and avail and avail > 0 then
+                -- bind on pickup and this character does not have the profession: useless to buy here
+                local info = RM.Data:RecipeInfo(id)
+                if info and info.bind == "BoP" and not RM.Prof:Skill(skill) then
+                    self.bop[i] = { id = id, skill = skill }
+                end
+                if self.bop[i] then
+                    self.highlight[i] = "bop"
+                elseif o.limited and avail and avail > 0 then
                     self.highlight[i] = "stock"
                     table.insert(alarms, id)
                 elseif o.limited then
@@ -106,7 +115,7 @@ end
 -- Limited Supply recipes in the merchant window: tinted row with a border (orange = in stock,
 -- grey = sold out) and a glow on the icon while in stock
 local marks = {}
-local COLORS = { stock = { 1, 0.42, 0.24 }, out = { 0.55, 0.55, 0.55 } }
+local COLORS = { stock = { 1, 0.42, 0.24 }, out = { 0.55, 0.55, 0.55 }, bop = { 1, 0.12, 0.12 } }
 
 local function mark(i, button)
     local m = marks[i]
@@ -147,7 +156,7 @@ function M:UpdateHighlight()
                 if state then
                     local c = COLORS[state]
                     if m.SetBackdropBorderColor then m:SetBackdropBorderColor(c[1], c[2], c[3], state == "stock" and 1 or 0.7) end
-                    m.tint:SetVertexColor(c[1], c[2], c[3], state == "stock" and 0.22 or 0.1)
+                    m.tint:SetVertexColor(c[1], c[2], c[3], (state == "out" and 0.1) or 0.22)
                     m:Show() m.tint:Show()
                     m.glow:SetShown(state == "stock")
                 else
@@ -166,3 +175,27 @@ RM:On("MERCHANT_UPDATE", function() M:Scan() end)
 if MerchantFrame_UpdateMerchantInfo then
     hooksecurefunc("MerchantFrame_UpdateMerchantInfo", function() M:UpdateHighlight() end)
 end
+
+-- Ask before buying a bind-on-pickup recipe of a profession this character does not have
+StaticPopupDialogs["RECIPEMANAGER_BUY_BOP"] = {
+    text = "%s",
+    button1 = YES, button2 = NO,
+    OnAccept = function(_, data) if data and data.buy then data.buy() end end,
+    timeout = 0, whileDead = false, hideOnEscape = true, showAlert = true, preferredIndex = 3,
+}
+
+local function guard(original)
+    return function(index, quantity, ...)
+        local b = M.bop[index]
+        if b and MerchantFrame and MerchantFrame:IsShown() and MerchantFrame.selectedTab ~= 2 then
+            local name = (RM.UI.ItemName(b.id))
+            local prof = (RM.UI.ProfName and RM.UI.ProfName(b.skill)) or "?"
+            local text = string.format(L["CONFIRM_BOP"], name, RM.playerName or "?", prof)
+            local args = { ... }
+            StaticPopup_Show("RECIPEMANAGER_BUY_BOP", text, nil, { buy = function() original(index, quantity, unpack(args)) end })
+            return
+        end
+        return original(index, quantity, ...)
+    end
+end
+if type(BuyMerchantItem) == "function" then BuyMerchantItem = guard(BuyMerchantItem) end
