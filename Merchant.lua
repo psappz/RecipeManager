@@ -8,7 +8,7 @@ local M = {}
 RM.Merchant = M
 
 local alarmed = {} -- [npc..":"..item] = time (one alarm per vendor visit)
-M.highlight = {}   -- [merchantIndex] = true
+M.highlight = {}   -- [merchantIndex] = "stock" (Limited Supply in stock) or "out" (sold out)
 
 local function npcIdFromGuid(guid)
     if not guid then return nil end
@@ -56,8 +56,10 @@ function M:Scan()
                 end
                 obs[id] = o
                 if o.limited and avail and avail > 0 then
-                    self.highlight[i] = true
+                    self.highlight[i] = "stock"
                     table.insert(alarms, id)
+                elseif o.limited then
+                    self.highlight[i] = "out"
                 end
             end
         end
@@ -91,6 +93,9 @@ function M:Alarm(npc, ids)
             alarmed[key] = time()
             local name = (RM.UI.ItemName(id))
             local text = string.format(L["BUY NOW - Limited Supply: %s"], name)
+            if s.hot and s.margin then
+                text = text .. "  -  " .. string.format(L["HOT, expected margin %s"], RM:Money(s.margin))
+            end
             RaidNotice_AddMessage(RaidWarningFrame, text, ChatTypeInfo["RAID_WARNING"])
             RM:Print(text)
             if RM.settings.sound then PlaySound(SOUNDKIT.RAID_WARNING, "Master") end
@@ -98,7 +103,36 @@ function M:Alarm(npc, ids)
     end
 end
 
-local glows = {}
+-- Limited Supply recipes in the merchant window: tinted row with a border (orange = in stock,
+-- grey = sold out) and a glow on the icon while in stock
+local marks = {}
+local COLORS = { stock = { 1, 0.42, 0.24 }, out = { 0.55, 0.55, 0.55 } }
+
+local function mark(i, button)
+    local m = marks[i]
+    if m then return m end
+    local row = _G["MerchantItem" .. i] or button:GetParent() or button
+    m = CreateFrame("Frame", nil, row, BackdropTemplateMixin and "BackdropTemplate" or nil)
+    m:SetPoint("TOPLEFT", row, "TOPLEFT", -3, 3)
+    m:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", 3, -3)
+    m:SetFrameLevel(row:GetFrameLevel() + 5)
+    m:EnableMouse(false)
+    if m.SetBackdrop then
+        m:SetBackdrop({ edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", edgeSize = 12 })
+    end
+    m.tint = row:CreateTexture(nil, "BACKGROUND", nil, 1)
+    m.tint:SetAllPoints(row)
+    m.tint:SetColorTexture(1, 1, 1, 1)
+    m.glow = button:CreateTexture(nil, "OVERLAY")
+    m.glow:SetTexture("Interface\\Buttons\\UI-ActionButton-Border")
+    m.glow:SetBlendMode("ADD")
+    m.glow:SetVertexColor(1, 0.42, 0.24)
+    m.glow:SetPoint("CENTER")
+    m.glow:SetSize(button:GetWidth() * 1.8, button:GetHeight() * 1.8)
+    marks[i] = m
+    return m
+end
+
 function M:UpdateHighlight()
     if not MerchantFrame or not MerchantFrame:IsShown() then return end
     local per = MERCHANT_ITEMS_PER_PAGE or 10
@@ -106,18 +140,20 @@ function M:UpdateHighlight()
     for i = 1, per do
         local button = _G["MerchantItem" .. i .. "ItemButton"]
         if button then
-            local g = glows[i]
-            if not g then
-                g = button:CreateTexture(nil, "OVERLAY")
-                g:SetTexture("Interface\\Buttons\\UI-ActionButton-Border")
-                g:SetBlendMode("ADD")
-                g:SetVertexColor(1, 0.42, 0.24)
-                g:SetPoint("CENTER")
-                g:SetSize(button:GetWidth() * 1.8, button:GetHeight() * 1.8)
-                glows[i] = g
-            end
             local index = (page - 1) * per + i
-            g:SetShown(MerchantFrame.selectedTab ~= 2 and self.highlight[index] == true)
+            local state = MerchantFrame.selectedTab ~= 2 and self.highlight[index] or nil
+            local m = (state or marks[i]) and mark(i, button)
+            if m then
+                if state then
+                    local c = COLORS[state]
+                    if m.SetBackdropBorderColor then m:SetBackdropBorderColor(c[1], c[2], c[3], state == "stock" and 1 or 0.7) end
+                    m.tint:SetVertexColor(c[1], c[2], c[3], state == "stock" and 0.22 or 0.1)
+                    m:Show() m.tint:Show()
+                    m.glow:SetShown(state == "stock")
+                else
+                    m:Hide() m.tint:Hide() m.glow:Hide()
+                end
+            end
         end
     end
 end

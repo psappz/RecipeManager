@@ -82,6 +82,23 @@ function PX:Check()
         text = string.format(L["Recipe vendor nearby: %s (%s) - %d recipes"], v.name, RM:FormatDistance(d), #list)
     end
     RaidNotice_AddMessage(RaidWarningFrame, text, ChatTypeInfo["RAID_WARNING"])
+    -- hot Limited Supply recipes by name, with the margin expected now
+    local hot = {}
+    for _, s in ipairs(list) do
+        if s.limited and s.hot then table.insert(hot, s) end
+    end
+    if #hot > 0 then
+        table.sort(hot, function(a, b) return (a.margin or 0) > (b.margin or 0) end)
+        local parts = {}
+        for i = 1, math.min(2, #hot) do
+            local s = hot[i]
+            table.insert(parts, (RM.UI.ItemName(s.id)) .. (s.margin and (" (~" .. RM:Money(s.margin) .. ")") or ""))
+        end
+        local line = string.format(L["HOT Limited Supply: %s"], table.concat(parts, ", "))
+        if #hot > 2 then line = line .. " " .. string.format(L["+%d more"], #hot - 2) end
+        RaidNotice_AddMessage(RaidWarningFrame, line, ChatTypeInfo["RAID_WARNING"])
+        RM:Print(line)
+    end
     if RM.settings.sound and limited > 0 then PlaySound(SOUNDKIT.RAID_WARNING, "Master") end
     local ids = {}
     for _, s in ipairs(list) do table.insert(ids, s.id) end

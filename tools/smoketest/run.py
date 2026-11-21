@@ -12,7 +12,7 @@ local function newmock(name)
     if k=="GetHeight" then return function() return 500 end end
     if k=="GetWidth" then return function() return 380 end end
     if k=="GetRight" or k=="GetLeft" or k=="GetTop" or k=="GetBottom" then return function() return 100 end end
-    if k=="GetEffectiveScale" or k=="GetScale" then return function() return 1 end end
+    if k=="GetEffectiveScale" or k=="GetScale" or k=="GetFrameLevel" then return function() return 1 end end
     if k=="GetStringWidth" then return function() return 50 end end
     if k=="IsShown" or k=="IsVisible" then return function(self) return not rawget(self,"_hidden") end end
     if k=="Hide" then return function(self) rawset(self,"_hidden",true) end end
@@ -47,6 +47,9 @@ function GetRealmName() return "Realm" end
 function GetItemCount() return 3 end
 function GetItemInfo(id) return "Item"..id end
 function IsInInstance() return false end
+function UnitOnTaxi() return false end
+function UnitLevel() return 30 end
+function UnitClass() return "Krieger", "WARRIOR" end
 function InCombatLockdown() return false end
 function hooksecurefunc() end
 function GetAddOnMetadata() return "1.4.1" end
