@@ -19,4 +19,10 @@ M.highlight = { "stock", "stock", "stock", "stock" } M.bop = {}
 local t = 1000
 GetTime = function() return t end
 for k = 1, 8 do M:AutoBuy() t = t + 1 end
-return "bought: " .. table.concat(BUY_LOG, ",") .. " | " .. table.concat(printed, " / ")
+-- known BoP recipe: never bought
+BUY_LOG = {} M.KnownAt = function(i) return i == 4 end
+local saved = M.AutoBuy
+RM:Fire("NONE")
+for k = 1, 3 do M:AutoBuy() t = t + 1 end
+local second = table.concat(BUY_LOG, ",")
+return "known run bought: [" .. second .. "] first run: " .. table.concat(BUY_LOG, ",") .. " | " .. table.concat(printed, " / ")

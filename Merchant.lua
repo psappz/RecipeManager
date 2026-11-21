@@ -118,6 +118,17 @@ end
 
 -- Limited Supply recipes in the merchant window: tinted row with a border (orange = in stock,
 -- grey = sold out) and a glow on the icon while in stock
+-- Does the merchant's own tooltip of slot i say "Already known"?
+function M.KnownAt(i)
+    if not (C_TooltipInfo and C_TooltipInfo.GetMerchantItem) then return false end
+    local ok, data = pcall(C_TooltipInfo.GetMerchantItem, i)
+    if not ok or type(data) ~= "table" or not data.lines then return false end
+    for _, line in ipairs(data.lines) do
+        if line.leftText == ITEM_SPELL_KNOWN then return true end
+    end
+    return false
+end
+
 -- Automatic purchase: watched Limited Supply recipes in stock, up to the price and quantity set in
 -- the settings. One item at a time; the next one after the merchant list has updated.
 function M:AutoBuy()
@@ -136,7 +147,7 @@ function M:AutoBuy()
             local limit = maxQty
             local info = id and RM.Data:RecipeInfo(id)
             if info and info.bind == "BoP" then
-                local known = RM.Prof.Knows and RM.Prof:Knows(id)
+                local known = M.KnownAt(i) or (RM.Prof.Knows and RM.Prof:Knows(id))
                 limit = (known or (GetItemCount and GetItemCount(id, true) or 0) > 0) and 0 or 1
             end
             if id and watch[id] and not extended and price and price <= maxPrice and (avail or 0) > 0

@@ -388,8 +388,11 @@ function DB:KnownByPlayer(itemID)
     return known
 end
 local function clearKnown() wipe(knownCache) end
+DB.ClearKnown = clearKnown
 RM:On("NEW_RECIPE_LEARNED", clearKnown)
 RM:On("LEARNED_SPELL_IN_TAB", clearKnown)
+RM:On("SKILL_LINES_CHANGED", clearKnown) -- Forever has no NEW_RECIPE_LEARNED; a learned recipe changes the skill lines
+RM:On("MERCHANT_SHOW", clearKnown)      -- always fresh for what is bought at a vendor
 RM:On("TRADE_SKILL_LIST_UPDATE", clearKnown)
 RM:On("SKILL_LINES_CHANGED", clearKnown)
 
