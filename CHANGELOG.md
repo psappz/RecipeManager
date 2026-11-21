@@ -7,6 +7,7 @@
 - "BUY NOW" also says when the recipe is hot and which margin to expect.
 - Merchant window: Limited Supply recipes are tinted and framed, orange while in stock, grey when sold out.
 - Merchant window: bind-on-pickup recipes of a profession your character does not have are marked red, and RecipeManager asks before you buy one.
+- **Automatic purchase** (settings, off by default): watched Limited Supply recipes are bought at the vendor as soon as they are in stock, up to a maximum price (gold) and a maximum quantity per recipe and vendor visit. Every purchase is reported in the chat. Bind-on-pickup recipes of professions your character lacks are never bought automatically.
 
 ## 1.5.3
 

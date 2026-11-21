@@ -53,6 +53,29 @@ function S.Build(page)
         c:SetPoint("TOPLEFT", 10 + col * 150, -58 - row * 26)
         i = i + 1
     end
+    -- Automatic purchase of watched Limited Supply recipes
+    local ah = W:Text(box, "GameFontNormal", L["Automatic purchase"])
+    ah:SetPoint("TOPLEFT", 10, -144)
+    local set = RM.settings
+    local ab = add(W:Check(box, L["Buy watched Limited Supply recipes at the vendor automatically"],
+        function() return set.autoBuy end, function(v) set.autoBuy = v end))
+    ab:SetPoint("TOPLEFT", 10, -164)
+    local mpL = W:Text(box, "GameFontHighlightSmall", L["Max. price per recipe"])
+    mpL:SetPoint("TOPLEFT", 32, -194)
+    local mp = add(W:Number(box, 44, function() return set.autoBuyMax or 5 end,
+        function(v) set.autoBuyMax = math.max(0, math.floor(v + 0.5)) end))
+    mp:SetPoint("LEFT", mpL, "RIGHT", 8, 0)
+    local mpG = W:Text(box, "GameFontHighlightSmall", L["gold"])
+    mpG:SetPoint("LEFT", mp, "RIGHT", 6, 0)
+    local mqL = W:Text(box, "GameFontHighlightSmall", L["Max. quantity per recipe"])
+    mqL:SetPoint("LEFT", mpG, "RIGHT", 24, 0)
+    local mq = add(W:Number(box, 36, function() return set.autoBuyQty or 3 end,
+        function(v) set.autoBuyQty = math.max(1, math.min(20, math.floor(v + 0.5))) end))
+    mq:SetPoint("LEFT", mqL, "RIGHT", 8, 0)
+    local hint = W:Text(box, "GameFontDisableSmall", L["AUTOBUY_HINT"])
+    hint:SetPoint("TOPLEFT", 32, -216)
+    hint:SetWidth(430)
+    hint:SetJustifyH("LEFT")
     page.focusText = W:Text(box, "GameFontDisableSmall")
     page.focusText:SetPoint("BOTTOMLEFT", 10, 10)
     page.focusText:SetWidth(450)

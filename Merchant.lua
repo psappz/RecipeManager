@@ -8,6 +8,9 @@ local M = {}
 RM.Merchant = M
 
 local alarmed = {} -- [npc..":"..item] = time (one alarm per vendor visit)
+local autoBought = {} -- [item] = count bought automatically during this vendor visit
+local autoPending     -- GetTime() of the last automatic purchase, until the merchant list updates
+local rawBuy = BuyMerchantItem -- the game's own purchase, before the BoP guard below
 M.highlight = {}   -- [merchantIndex] = "stock" (Limited Supply in stock), "out" (sold out) or "bop"
 M.bop = {}         -- [merchantIndex] = { id, skill }: bind-on-pickup recipe of a profession this character lacks
 
@@ -90,6 +93,7 @@ function M:Scan()
     end
     if RM.Data.ready then RM.Data:MergeLearned() end
     self:Alarm(npc, alarms)
+    self:AutoBuy()
     self:UpdateHighlight()
     RM:Fire("OBSERVATIONS_CHANGED", npc)
 end
@@ -114,6 +118,33 @@ end
 
 -- Limited Supply recipes in the merchant window: tinted row with a border (orange = in stock,
 -- grey = sold out) and a glow on the icon while in stock
+-- Automatic purchase: watched Limited Supply recipes in stock, up to the price and quantity set in
+-- the settings. One item at a time; the next one after the merchant list has updated.
+function M:AutoBuy()
+    local set = RM.settings
+    if not (set and set.autoBuy) or not rawBuy then return end
+    if autoPending and GetTime() - autoPending < 0.5 then return end
+    autoPending = nil
+    local watch = RM.db and RM.db.watch or {}
+    local maxPrice = (tonumber(set.autoBuyMax) or 0) * 10000
+    local maxQty = tonumber(set.autoBuyQty) or 1
+    for i = 1, GetMerchantNumItems() do
+        if self.highlight[i] == "stock" and not self.bop[i] then
+            local id = C_Item.GetItemInfoInstant(GetMerchantItemLink(i) or "")
+            local _, price, _, avail, extended = itemInfo(i)
+            if id and watch[id] and not extended and price and price <= maxPrice and (avail or 0) > 0
+                and (autoBought[id] or 0) < maxQty and GetMoney() >= price then
+                autoBought[id] = (autoBought[id] or 0) + 1
+                autoPending = GetTime()
+                rawBuy(i, 1)
+                RM:Print(string.format(L["Bought automatically: %s for %s (%d/%d)"],
+                    (RM.UI.ItemName(id)), RM:Money(price), autoBought[id], maxQty))
+                return
+            end
+        end
+    end
+end
+
 local marks = {}
 local COLORS = { stock = { 1, 0.42, 0.24 }, out = { 0.55, 0.55, 0.55 }, bop = { 1, 0.12, 0.12 } }
 
@@ -169,6 +200,8 @@ end
 
 RM:On("MERCHANT_SHOW", function()
     wipe(alarmed)
+    wipe(autoBought)
+    autoPending = nil
     C_Timer.After(0.2, function() M:Scan() end)
 end)
 RM:On("MERCHANT_UPDATE", function() M:Scan() end)
